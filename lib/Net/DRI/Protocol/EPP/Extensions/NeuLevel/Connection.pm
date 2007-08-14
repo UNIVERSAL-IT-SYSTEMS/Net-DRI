@@ -20,6 +20,7 @@ package Net::DRI::Protocol::EPP::Extensions::NeuLevel::Connection;
 
 use strict;
 use Net::DRI::Exception;
+use Errno qw(EAGAIN);
 use Fcntl;
 
 use base qw(Net::DRI::Protocol::EPP::Connection);
@@ -71,6 +72,12 @@ sub get_data
  shift if ($_[0] eq __PACKAGE__);
  my ($to,$sock)=@_;
  my $flags = 0;
+ my $err = EAGAIN;
+ my $s;
+ my $m;
+
+ $sock->read($s, 1);
+ die(Net::DRI::Protocol::ResultStatus->new_error('COMMAND_SYNTAX_ERROR','Unable to read EPP message: ' . $! . ' (connection closed by registry?)','en')) unless $s;
 
  fcntl($sock, F_GETFL, $flags) or
    die(Net::DRI::Protocol::ResultStatus->new_error('COMMAND_SYNTAX_ERROR','Unable to retrieve currently set flags from socket: ' . $!,'en'));
@@ -79,12 +86,12 @@ sub get_data
    die(Net::DRI::Protocol::ResultStatus->new_error('COMMAND_SYNTAX_ERROR','Unable to set non-blocking option on socket: ' . $!,'en'));
 
  $sock->read($m,65536);
- die(Net::DRI::Protocol::ResultStatus->new_error('COMMAND_SYNTAX_ERROR','Unable to read EPP message (connection closed by registry?)','en')) unless $m;
+ die(Net::DRI::Protocol::ResultStatus->new_error('COMMAND_SYNTAX_ERROR','Unable to read EPP message: ' . $! . ' (connection closed by registry?)','en')) unless $m;
  fcntl($sock, F_SETFL, $flags) or
    die(Net::DRI::Protocol::ResultStatus->new_error('COMMAND_SYNTAX_ERROR','Unable to restore old flags on socket: ' . $!,'en'));
  die(Net::DRI::Protocol::ResultStatus->new_error('COMMAND_SYNTAX_ERROR',$m? $m : '<empty message from server>','en')) unless ($m=~m!</epp>$!);
 
- return Net::DRI::Data::Raw->new_from_string($m);
+ return Net::DRI::Data::Raw->new_from_string($s . $m);
 }
 
 ####################################################################################################

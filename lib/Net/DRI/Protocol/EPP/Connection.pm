@@ -20,6 +20,7 @@ package Net::DRI::Protocol::EPP::Connection;
 use strict;
 use Net::DRI::Data::Raw;
 use Net::DRI::Protocol::ResultStatus;
+use Carp qw(confess);
 
 our $VERSION=do { my @r=(q$Revision: 1.10 $=~/\d+/g); sprintf("%d".".%02d" x $#r, @r); };
 
@@ -68,7 +69,7 @@ See the LICENSE file that comes with this distribution for more details.
 
 sub login
 {
- shift if ($_[0] eq __PACKAGE__);
+ shift if ($_[0] eq __PACKAGE__ || UNIVERSAL::isa($_[0], __PACKAGE__));
  my ($cm,$id,$pass,$cltrid,$dr,$newpass)=@_;
 
  my $got=$cm->();
@@ -95,7 +96,7 @@ sub login
 
 sub logout
 {
- shift if ($_[0] eq __PACKAGE__);
+ shift if ($_[0] eq __PACKAGE__ || UNIVERSAL::isa($_[0], __PACKAGE__));
  my ($cm,$cltrid)=@_;
  my $mes=$cm->();
  $mes->command(['logout']);
@@ -105,7 +106,7 @@ sub logout
 
 sub keepalive
 {
- shift if ($_[0] eq __PACKAGE__);
+ shift if ($_[0] eq __PACKAGE__ || UNIVERSAL::isa($_[0], __PACKAGE__));
  my ($cm,$cltrid)=@_;
  my $mes=$cm->();
  $mes->command(['hello']); ## Explicitely allowed since draft-hollenbeck-epp-rfc3730bis-02.txt
@@ -116,7 +117,7 @@ sub keepalive
 
 sub get_data
 {
- shift if ($_[0] eq __PACKAGE__);
+ shift if ($_[0] eq __PACKAGE__ || UNIVERSAL::isa($_[0], __PACKAGE__));
  my ($to,$sock)=@_;
 
  my $c;
@@ -137,7 +138,7 @@ sub get_data
 
 sub parse_greeting
 {
- shift if ($_[0] eq __PACKAGE__);
+ shift if ($_[0] eq __PACKAGE__ || UNIVERSAL::isa($_[0], __PACKAGE__));
  my $dc=shift;
  my ($code,$msg,$lang)=find_code($dc);
  unless (defined($code) && ($code==1000))
@@ -157,7 +158,7 @@ sub parse_keepalive
 
 sub parse_login
 {
- shift if ($_[0] eq __PACKAGE__);
+ shift if ($_[0] eq __PACKAGE__ || UNIVERSAL::isa($_[0], __PACKAGE__));
  my $dc=shift;
  my ($code,$msg,$lang)=find_code($dc);
  unless (defined($code) && ($code==1000))
@@ -172,7 +173,7 @@ sub parse_login
 
 sub parse_logout
 {
- shift if ($_[0] eq __PACKAGE__);
+ shift if ($_[0] eq __PACKAGE__ || UNIVERSAL::isa($_[0], __PACKAGE__));
  my $dc=shift;
  my ($code,$msg,$lang)=find_code($dc);
  unless (defined($code) && ($code==1500))
@@ -188,7 +189,9 @@ sub parse_logout
 sub find_code
 {
  my $dc=shift;
- my $a=$dc->as_string();
+ my $a;
+ confess('No source specified') unless (defined($dc) && ref($dc) eq 'Net::DRI::Data::Raw');
+ $a=$dc->as_string();
  return () unless ($a=~m!</epp>!);
  return (1000,'Greeting OK')  if ($a=~m!<greeting>!);
  $a=~s/>[\n\s\t]+/>/g;

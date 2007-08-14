@@ -161,6 +161,7 @@ sub parse_error
  return unless $mes->errcode() == 2306;
 
  my $ext=$mes->node_extension();
+ return unless (defined($ext));
  my $data=$ext->getElementsByTagNameNS($NS,'nsExtErrData');
  return unless $data;
  $data=$data->shift()->getElementsByTagNameNS($NS,'msg');

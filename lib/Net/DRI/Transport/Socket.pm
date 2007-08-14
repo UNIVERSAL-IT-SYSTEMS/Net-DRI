@@ -55,11 +55,11 @@ time to wait (in seconds) for server reply
 
 =head2 socktype
 
-ssl or tcp
+ssl, puressl, tcp or puretcp
 
 =head2 ssl_key_file ssl_cert_file ssl_ca_file ssl_ca_path ssl_cipher_list ssl_version
 
-if C<socktype> is 'ssl', all key materials
+if C<socktype> is 'ssl' or 'puressl', all key materials
 
 =head2 ssl_verify ssl_verify_callback
 
@@ -148,7 +148,7 @@ sub new
  $t{trid_factory}=(exists($opts{trid}) && (ref($opts{trid}) eq 'CODE'))? $opts{trid} : \&Net::DRI::Util::create_trid_1;
 
  Net::DRI::Exception::usererr_insufficient_parameters("socktype must be defined") unless (exists($opts{socktype}));
- Net::DRI::Exception::usererr_invalid_parameters("socktype must be ssl or tcp") unless ($opts{socktype}=~m/^(ssl|tcp)$/);
+ Net::DRI::Exception::usererr_invalid_parameters("socktype must be ssl, puressl, tcp or puretcp") unless ($opts{socktype}=~m/^(pure)?(ssl|tcp)$/);
  $t{socktype}=$opts{socktype};
  $t{client_login}=$opts{client_login};
  $t{client_password}=$opts{client_password};
@@ -168,7 +168,7 @@ sub new
  Net::DRI::Exception::usererr_invalid_parameters("close_after must be an integer") if ($opts{close_after} && !Net::DRI::Util::isint($opts{close_after}));
  $t{close_after}=$opts{close_after} || 0;
 
- if ($t{socktype} eq 'ssl')
+ if ($t{socktype} eq 'ssl' || $t{socktype} eq 'puressl')
  {
   $IO::Socket::SSL::DEBUG=$opts{ssl_debug} if exists($opts{ssl_debug});
 
@@ -222,13 +222,13 @@ sub open_socket
        );
  $n{LocalAddr}=$t->{local_host} if exists($t->{local_host});
 
- if ($type eq 'ssl')
+ if ($type eq 'ssl' || $type eq 'puressl')
  {
   $sock=IO::Socket::SSL->new(%{$t->{ssl_context}},
                              %n,
                             );
  }
- if ($type eq 'tcp')
+ if ($type eq 'tcp' || $type eq 'puretcp')
  {
   $sock=IO::Socket::INET->new(%n);
  }
@@ -374,7 +374,9 @@ sub _print ## here we are sure open_connection() was called before
  my ($self,$count,$tosend)=@_;
  my $sock=$self->sock();
 
- Net::DRI::Exception->die(0,'transport/socket',4,'Unable to send message') unless ($sock->print($tosend->as_string('tcp')));
+ Net::DRI::Exception->die(0,'transport/socket',4,'Unable to send message')
+   unless ($sock->print($tosend->as_string($self->{transport}->{socktype} =~
+	/^pure/ ? undef : 'tcp')));
  return 1; ## very important
 }
 

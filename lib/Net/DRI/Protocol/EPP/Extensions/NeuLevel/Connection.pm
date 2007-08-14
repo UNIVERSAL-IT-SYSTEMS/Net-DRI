@@ -28,7 +28,7 @@ use base qw(Net::DRI::Protocol::EPP::Connection);
 =head1 NAME
 
 Net::DRI::Protocol::EPP::Extensions::NeuLevel::Connection - Connection to
-	VeriSign
+	NeuLevel
 
 =head1 DESCRIPTION
 
@@ -78,14 +78,22 @@ sub login
 
  my $mes=$cm->();
  $mes->command(['login']);
- my @d;
- push @d,['clID',$id];
- push @d,['pw',$pass];
- push @d,['newPW',$newpass] if (defined($newpass) && $newpass);
- push @d,['options',['version',$rg->{version}->[0]],['lang','en']];
+ my $cred = {
+	clid =>	$id,
+	pw =>	$pass,
+	version =>	$rg->{version}->[0],
+	lang =>	'en'
+ };
+ $cred->{'newPW'} = $newpass if (defined($newpass) && $newpass);
+ $mes->command_creds($cred);
 
+ my @d;
  my @s;
  push @s,map { ['objURI',$_] } @{$rg->{svcs}};
+ push(@s,[$type . ':svc', {
+	'xmlns:' . $type => 'urn:iana:xml:ns:' . $type . '-1.0',
+	'xsi:schemaLocation' => 'urn:iana:xml:ns:' . $type . '-1.0 ' . $type .
+	'-1.0.xsd'}]) foreach my $type (qw(contact domain host));
  push @s,['svcExtension',map {['extURI',$_]} @{$rg->{svcext}}] if (exists($rg->{svcext}) && defined($rg->{svcext}) && (ref($rg->{svcext}) eq 'ARRAY'));
  push @d,['svcs',@s];
 
@@ -115,12 +123,14 @@ sub keepalive
 
 sub get_data
 {
- shift if ($_[0] eq __PACKAGE__);
+ shift if ($_[0] eq __PACKAGE__ || UNIVERSAL::isa($_[0], __PACKAGE__));
  my ($to,$sock)=@_;
  my $flags = 0;
  my $err = EAGAIN;
  my $s;
  my $m;
+
+ warn('get_data called');
 
  $sock->read($s, 1);
  die(Net::DRI::Protocol::ResultStatus->new_error('COMMAND_SYNTAX_ERROR','Unable to read EPP message: ' . $! . ' (connection closed by registry?)','en')) unless $s;

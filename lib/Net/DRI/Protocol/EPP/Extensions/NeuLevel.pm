@@ -20,6 +20,7 @@ package Net::DRI::Protocol::EPP::Extensions::NeuLevel;
 use strict;
 
 use base qw/Net::DRI::Protocol::EPP/;
+use Net::DRI::Protocol::EPP::Extensions::NeuLevel::Message;
 
 our $VERSION=do { my @r=(q$Revision: 1.1.1.1 $=~/\d+/g); sprintf("%d".".%02d" x $#r, @r); };
 
@@ -74,6 +75,20 @@ sub new
  my %e=map { $_ => 1 } (defined($extrah)? (ref($extrah)? @$extrah : ($extrah)) : ());
 
  my $self=$c->SUPER::new($drd,$version,[keys(%e)]); ## we are now officially a Net::DRI::Protocol::EPP object
+
+ $self->{ns}->{_main} = ['urn:iana:xml:ns:epp-1.0', 'epp-1.0.xsd'];
+ $self->{ns}->{domain} = ['urn:iana:xml:ns:domain-1.0', 'domain-1.0.xsd'];
+ $self->{ns}->{host} = ['urn:iana:xml:ns:host-1.0', 'host-1.0.xsd'];
+ $self->{ns}->{contact} = ['urn:iana:xml:ns:contact-1.0', 'contact-1.0.xsd'];
+
+ my $rfact=$self->factories();
+ $rfact->{message} = sub {
+  my $m = new Net::DRI::Protocol::EPP::Extensions::NeuLevel::Message(@_);
+  $m->ns($self->{ns});
+  $m->version($version);
+  return $m;
+ };
+
  $self->default_parameters()->{subproductid}=$defproduct || '_auto_';
  $self->default_parameters()->{breaks_rfc3915}=1;
 

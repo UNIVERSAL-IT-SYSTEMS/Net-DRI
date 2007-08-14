@@ -27,6 +27,8 @@ use Net::DRI::Protocol::ResultStatus;
 use Net::DRI::Exception;
 use Net::DRI::Util;
 
+use Carp qw(confess);
+
 use base qw(Class::Accessor::Chained::Fast Net::DRI::Protocol::Message);
 __PACKAGE__->mk_accessors(qw(version errcode errmsg errlang command command_body cltrid svtrid msg_id node_resdata node_extension node_msg result_greeting result_extra_info));
 
@@ -218,6 +220,7 @@ sub as_string
 
 sub _toxml
 {
+ shift if ($_[0] eq __PACKAGE__ || UNIVERSAL::isa($_[0], __PACKAGE__));
  my $rd=shift;
  my @t;
  foreach my $d ((ref($rd->[0]))? @$rd : ($rd)) ## $d is a node=ref array
@@ -251,6 +254,7 @@ sub _toxml
 
 sub xml_escape
 {
+ shift if ($_[0] eq __PACKAGE__ || UNIVERSAL::isa($_[0], __PACKAGE__));
  my $in=shift;
  $in=~s/&/&amp;/g;
  $in=~s/</&lt;/g;
@@ -293,10 +297,12 @@ sub parse
  my $root=$doc->getDocumentElement();
  Net::DRI::Exception->die(0,'protocol/EPP',1,'Unsuccessfull parse, root element is not epp') unless ($root->getName() eq 'epp');
 
- if ($root->getElementsByTagNameNS($NS,'greeting'))
+ if ($root->getElementsByTagNameNS($NS,'greeting') || $root->getElementsByTagName('greeting'))
  {
+  my @el = $root->getElementsByTagNameNS($NS,'greeting');
+  @el = $root->getElementsByTagName('greeting') unless (@el);
   $self->errcode(1000); ## fake an OK
-  my $r=$self->parse_greeting(($root->getElementsByTagNameNS($NS,'greeting'))[0]);
+  my $r=$self->parse_greeting($el[0]);
   $self->result_greeting($r);
   return;
  }

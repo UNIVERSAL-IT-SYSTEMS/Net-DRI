@@ -67,6 +67,52 @@ See the LICENSE file that comes with this distribution for more details.
 
 ####################################################################################################
 
+sub login
+{
+ shift if ($_[0] eq __PACKAGE__ || UNIVERSAL::isa($_[0], __PACKAGE__));
+ my ($cm,$id,$pass,$cltrid,$dr,$newpass)=@_;
+
+ my $got=$cm->();
+ $got->parse($dr);
+ my $rg=$got->result_greeting();
+
+ my $mes=$cm->();
+ $mes->command(['login']);
+ my @d;
+ push @d,['clID',$id];
+ push @d,['pw',$pass];
+ push @d,['newPW',$newpass] if (defined($newpass) && $newpass);
+ push @d,['options',['version',$rg->{version}->[0]],['lang','en']];
+
+ my @s;
+ push @s,map { ['objURI',$_] } @{$rg->{svcs}};
+ push @s,['svcExtension',map {['extURI',$_]} @{$rg->{svcext}}] if (exists($rg->{svcext}) && defined($rg->{svcext}) && (ref($rg->{svcext}) eq 'ARRAY'));
+ push @d,['svcs',@s];
+
+ $mes->command_body(\@d);
+ $mes->cltrid($cltrid) if $cltrid;
+ return $mes->as_string();
+}
+
+sub logout
+{
+ shift if ($_[0] eq __PACKAGE__ || UNIVERSAL::isa($_[0], __PACKAGE__));
+ my ($cm,$cltrid)=@_;
+ my $mes=$cm->();
+ $mes->command(['logout']);
+ $mes->cltrid($cltrid) if $cltrid;
+ return $mes->as_string();
+}
+
+sub keepalive
+{
+ shift if ($_[0] eq __PACKAGE__ || UNIVERSAL::isa($_[0], __PACKAGE__));
+ my ($cm,$cltrid)=@_;
+ my $mes=$cm->();
+ $mes->command(['hello']); ## Explicitely allowed since draft-hollenbeck-epp-rfc3730bis-02.txt
+ return $mes->as_string();
+}
+
 sub get_data
 {
  shift if ($_[0] eq __PACKAGE__);

@@ -164,6 +164,12 @@ sub new_set
  return $s;
 }
 
+sub clear
+{
+ my $s=shift;
+ $s->{list}=[];
+}
+
 sub set
 {
  my $s=shift;

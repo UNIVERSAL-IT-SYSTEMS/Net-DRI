@@ -162,6 +162,14 @@ sub check_parse
  }
 }
 
+sub verify_rd
+{
+ my ($rd,$key)=@_;
+ return 0 unless (defined($key) && $key);
+ return 0 unless (defined($rd) && (ref($rd) eq 'HASH') && exists($rd->{$key}) && defined($rd->{$key}));
+ return 1;
+}
+
 sub info
 {
  my ($epp,$c)=@_;
@@ -330,9 +338,10 @@ sub parse_disclose ## RFC 3733 §2.9
 
 sub transfer_query
 {
- my ($epp,$c)=@_;
+ my ($epp,$c,$rd)=@_;
  my $mes=$epp->message();
  my @d=build_command($mes,['transfer',{'op'=>'query'}],$c);
+ push @d,build_authinfo($rd->{auth}) if (verify_rd($rd,'auth') && (ref($rd->{auth}) eq 'HASH'));
  $mes->command_body(\@d);
 }
 
@@ -385,7 +394,7 @@ sub build_tel
 sub build_authinfo
 {
  my $contact=shift;
- my $az=$contact->auth();
+ my $az=(ref($contact) eq 'HASH' ? $contact : $contact->auth());
  return () unless ($az && ref($az) && exists($az->{pw}));
  return ['contact:authInfo',['contact:pw',$az->{pw}]];
 }
@@ -508,25 +517,29 @@ sub delete
 
 sub transfer_request
 {
- my ($epp,$c)=@_;
+ my ($epp,$c,$rd)=@_;
  my $mes=$epp->message();
  my @d=build_command($mes,['transfer',{'op'=>'request'}],$c);
+
+ push @d,build_authinfo($rd->{auth}) if (verify_rd($rd,'auth') && (ref($rd->{auth}) eq 'HASH'));
  $mes->command_body(\@d);
 }
 
 sub transfer_cancel
 {
- my ($epp,$c)=@_;
+ my ($epp,$c,$rd)=@_;
  my $mes=$epp->message();
  my @d=build_command($mes,['transfer',{'op'=>'cancel'}],$c);
+ push @d,build_authinfo($rd->{auth}) if (verify_rd($rd,'auth') && (ref($rd->{auth}) eq 'HASH'));
  $mes->command_body(\@d);
 }
 
 sub transfer_answer
 {
- my ($epp,$c,$approve)=@_;
+ my ($epp,$c,$approve,$rd)=@_;
  my $mes=$epp->message();
  my @d=build_command($mes,['transfer',{'op'=>((defined($approve) && $approve)? 'approve' : 'reject' )}],$c);
+ push @d,build_authinfo($rd->{auth}) if (verify_rd($rd,'auth') && (ref($rd->{auth}) eq 'HASH'));
  $mes->command_body(\@d);
 }
 

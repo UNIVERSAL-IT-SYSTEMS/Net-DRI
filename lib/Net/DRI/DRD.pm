@@ -1007,33 +1007,33 @@ sub contact_update_status
 
 sub contact_transfer
 {
- my ($self,$ndr,$contact,$op)=@_;
+ my ($self,$ndr,$contact,$op,$rd)=@_;
  err_invalid_contact($contact) unless (defined($contact) && UNIVERSAL::isa($contact,'Net::DRI::Data::Contact') && $contact->srid());
  Net::DRI::Exception::usererr_invalid_parameters("Transfer operation must be start,stop,accept,refuse or query") unless ($op=~m/^(?:start|stop|query|accept|refuse)$/);
 
  my $rc;
  if ($op eq 'start')
  {
-  $rc=$ndr->process('contact','transfer_request',[$contact]);
+  $rc=$ndr->process('contact','transfer_request',[$contact,$rd]);
  } elsif ($op eq 'stop')
  {
-  $rc=$ndr->process('contact','transfer_cancel',[$contact]);
+  $rc=$ndr->process('contact','transfer_cancel',[$contact,$rd]);
  } elsif ($op eq 'query')
  {
-  $rc=$ndr->process('contact','transfer_query',[$contact]);
+  $rc=$ndr->process('contact','transfer_query',[$contact,$rd]);
  } else ## accept/refuse
  {
-  $rc=$ndr->process('contact','transfer_answer',[$contact,($op eq 'accept')? 1 : 0]);
+  $rc=$ndr->process('contact','transfer_answer',[$contact,($op eq 'accept')? 1 : 0,$rd]);
  }
 
  return $rc;
 }
 
-sub contact_transfer_start   { my ($self,$ndr,$contact)=@_; return $self->contact_transfer($ndr,$contact,'start'); }
-sub contact_transfer_stop    { my ($self,$ndr,$contact)=@_; return $self->contact_transfer($ndr,$contact,'stop'); }
-sub contact_transfer_query   { my ($self,$ndr,$contact)=@_; return $self->contact_transfer($ndr,$contact,'query'); }
-sub contact_transfer_accept  { my ($self,$ndr,$contact)=@_; return $self->contact_transfer($ndr,$contact,'accept'); }
-sub contact_transfer_refuse  { my ($self,$ndr,$contact)=@_; return $self->contact_transfer($ndr,$contact,'refuse'); }
+sub contact_transfer_start   { my ($self,$ndr,$contact,$rd)=@_; return $self->contact_transfer($ndr,$contact,'start',$rd); }
+sub contact_transfer_stop    { my ($self,$ndr,$contact,$rd)=@_; return $self->contact_transfer($ndr,$contact,'stop',$rd); }
+sub contact_transfer_query   { my ($self,$ndr,$contact,$rd)=@_; return $self->contact_transfer($ndr,$contact,'query',$rd); }
+sub contact_transfer_accept  { my ($self,$ndr,$contact,$rd)=@_; return $self->contact_transfer($ndr,$contact,'accept',$rd); }
+sub contact_transfer_refuse  { my ($self,$ndr,$contact,$rd)=@_; return $self->contact_transfer($ndr,$contact,'refuse',$rd); }
 
 sub contact_current_status
 {

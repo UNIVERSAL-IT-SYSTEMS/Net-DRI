@@ -74,6 +74,8 @@ sub new
  my ($drd,$version,$extrah,$defproduct)=@_;
  my %e=map { $_ => 1 } (defined($extrah)? (ref($extrah)? @$extrah : ($extrah)) : ());
 
+ $e{'Net::DRI::Protocol::EPP::Extensions::NeuLevel::Domain'} = 1;
+
  my $self=$c->SUPER::new($drd,$version,[keys(%e)]); ## we are now officially a Net::DRI::Protocol::EPP object
 
  $self->{ns}->{_main} = ['urn:iana:xml:ns:epp-1.0', 'epp-1.0.xsd'];

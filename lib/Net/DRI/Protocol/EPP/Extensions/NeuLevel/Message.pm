@@ -111,7 +111,7 @@ sub as_string
   {
    push @d,'<'.$cmd.$attr.'>';
    push @d,'<'.$ocmd.' '.$ons.'>';
-   push @d,_toxml($body);
+   push @d,$self->SUPER::_toxml($body);
    push @d,'</'.$ocmd.'>';
    push @d,'</'.$cmd.'>';
   } else

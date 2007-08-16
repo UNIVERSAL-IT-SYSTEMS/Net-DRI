@@ -90,10 +90,13 @@ sub login
  my @d;
  my @s;
  push @s,map { ['objURI',$_] } @{$rg->{svcs}};
- push(@s,[$type . ':svc', {
+ foreach my $type (qw(contact domain host))
+ {
+  push(@s,[$type . ':svc', {
 	'xmlns:' . $type => 'urn:iana:xml:ns:' . $type . '-1.0',
 	'xsi:schemaLocation' => 'urn:iana:xml:ns:' . $type . '-1.0 ' . $type .
-	'-1.0.xsd'}]) foreach my $type (qw(contact domain host));
+	'-1.0.xsd'}]);
+ }
  push @s,['svcExtension',map {['extURI',$_]} @{$rg->{svcext}}] if (exists($rg->{svcext}) && defined($rg->{svcext}) && (ref($rg->{svcext}) eq 'ARRAY'));
  push @d,['svcs',@s];
 
@@ -129,8 +132,6 @@ sub get_data
  my $err = EAGAIN;
  my $s;
  my $m;
-
- warn('get_data called');
 
  $sock->read($s, 1);
  die(Net::DRI::Protocol::ResultStatus->new_error('COMMAND_SYNTAX_ERROR','Unable to read EPP message: ' . $! . ' (connection closed by registry?)','en')) unless $s;

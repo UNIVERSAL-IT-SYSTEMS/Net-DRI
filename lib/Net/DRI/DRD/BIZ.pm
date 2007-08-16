@@ -75,7 +75,7 @@ sub new
  my $class=ref($proto) || $proto;
 
  my $self=$class->SUPER::new(@_);
- $self->{info}->{host_as_attr}=0;
+ $self->{biz}->{host_as_attr}=0;
 
  bless($self,$class);
  return $self;
@@ -94,17 +94,12 @@ sub transport_protocol_compatible
  my $tn=$to->name();
 
  return 1 if (($pn eq 'EPP') && ($tn eq 'socket_inet'));
- return 1 if (($pn eq 'Whois') && ($tn eq 'socket_inet'));
  return;
 }
 
 sub transport_protocol_default
 {
- my ($drd,$ndr,$type)=@_;
- $type='' if (!defined($type) || ref($type));
- return ('Net::DRI::Transport::Socket','Net::DRI::Protocol::EPP') unless ($type);
- return ('Net::DRI::Transport::Socket',[{defer=>1,close_after=>1,socktype=>'tcp',remote_host=>'whois.nic.biz',remote_port=>43,protocol_connection=>'Net::DRI::Protocol::Whois::Connection',protocol_version=>1}],'Net::DRI::Protocol::Whois',[]) if (lc($type) eq 'whois');
-
+ return ('Net::DRI::Transport::Socket','Net::DRI::Protocol::EPP');
 }
 
 ####################################################################################################

@@ -548,7 +548,8 @@ sub domain_transfer
  err_invalid_domain_name($domain) if $self->verify_name_domain($domain,'transfer');
  Net::DRI::Exception::usererr_invalid_parameters("Transfer operation must be start,stop,accept,refuse or query") unless ($op=~m/^(?:start|stop|query|accept|refuse)$/);
 
- Net::DRI::Exception->die(0,'DRD',3,'Invalid duration') if $self->verify_duration_transfer($ndr,(defined($rd) && (ref($rd) eq 'HASH') && exists($rd->{duration}))? $rd->{duration} : undef,$domain,$op);
+ Net::DRI::Exception->die(0,'DRD',3,'Invalid duration') if (defined($rd) && (ref($rd) eq 'HASH') && exists($rd->{duration}
+ ) && $self->verify_duration_transfer($ndr,(defined($rd) && (ref($rd) eq 'HASH') && exists($rd->{duration}))? $rd->{duration} : undef,$domain,$op));
 
  my $rc;
  if ($op eq 'start')

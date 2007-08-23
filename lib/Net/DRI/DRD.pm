@@ -581,7 +581,7 @@ sub domain_can
 {
  my ($self,$ndr,$domain,$what,$rd)=@_;
 
- my $sok=$self->domain_status_allow($ndr,$domain,$what,$rd);
+ my $sok=$self->domain_status_allows($ndr,$domain,$what,$rd);
  return 0 unless ($sok);
 
  my $ismine=$self->domain_is_mine($ndr,$domain,$rd);

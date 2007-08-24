@@ -241,9 +241,12 @@ sub open_socket
 sub send_login
 {
  my $self=shift;
+ my $nogreeting = 0;
  my $t=$self->{transport};
  my $sock=$self->sock();
  my $pc=$t->{pc};
+ my $dr;
+ $nogreeting = 1 if (defined($_[0]));
 
  return unless ($pc->can('parse_greeting') && $pc->can('login') && $pc->can('parse_login'));
  foreach my $p (qw/client_login client_password/)
@@ -252,10 +255,18 @@ sub send_login
  }
 
  ## Get registry greeting
- my $dr=$pc->get_data($self,$sock);
- $self->log('C<=S',$dr);
- my $rc1=$pc->parse_greeting($dr); ## gives back a Net::DRI::Protocol::ResultStatus
- die($rc1) unless $rc1->is_success();
+ unless ($nogreeting)
+ {
+  $dr=$pc->get_data($self,$sock);
+  $self->log('C<=S',$dr);
+  my $rc1=$pc->parse_greeting($dr); ## gives back a Net::DRI::Protocol::ResultStatus
+  die($rc1) unless $rc1->is_success();
+  $t->{last_greeting} = $dr;
+ }
+ else
+ {
+  $dr = $t->{last_greeting};
+ }
  my $cltrid=$t->{trid_factory}->($self->name());
  my $login=$pc->login($t->{message_factory},$t->{client_login},$t->{client_password},$cltrid,$dr,$t->{client_newpassword});
  $self->log('C=>S',$login);

@@ -21,6 +21,7 @@ use strict;
 
 use base qw/Net::DRI::Protocol::EPP/;
 use Net::DRI::Protocol::EPP::Extensions::NeuLevel::Message;
+use Net::DRI::Protocol::EPP::Extensions::NeuLevel::Contact;
 
 our $VERSION=do { my @r=(q$Revision: 1.1.1.1 $=~/\d+/g); sprintf("%d".".%02d" x $#r, @r); };
 
@@ -75,6 +76,7 @@ sub new
  my %e=map { $_ => 1 } (defined($extrah)? (ref($extrah)? @$extrah : ($extrah)) : ());
 
  $e{'Net::DRI::Protocol::EPP::Extensions::NeuLevel::Domain'} = 1;
+ $e{'Net::DRI::Protocol::EPP::Extensions::NeuLevel::Contact'} = 1;
 
  my $self=$c->SUPER::new($drd,$version,[keys(%e)]); ## we are now officially a Net::DRI::Protocol::EPP object
 

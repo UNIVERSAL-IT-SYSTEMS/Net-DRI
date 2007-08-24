@@ -92,6 +92,7 @@ sub register_commands
 
 sub build_command
 {
+ shift if (UNIVERSAL::isa($_[0], __PACKAGE__));
  my ($msg,$command,$contact)=@_;
  my @contact=(ref($contact) eq 'ARRAY')? @$contact : ($contact);
  my @c=map { UNIVERSAL::isa($_,'Net::DRI::Data::Contact')? $_->srid() : $_ } @contact;
@@ -381,6 +382,7 @@ sub transfer_parse
 
 sub build_tel
 {
+ shift if (UNIVERSAL::isa($_[0], __PACKAGE__));
  my ($name,$tel)=@_;
  if ($tel=~m/^(\S+)x(\S+)$/)
  {
@@ -393,6 +395,7 @@ sub build_tel
 
 sub build_authinfo
 {
+ shift if (UNIVERSAL::isa($_[0], __PACKAGE__));
  my $contact=shift;
  my $az=(ref($contact) eq 'HASH' ? $contact : $contact->auth());
  return () unless ($az && ref($az) && exists($az->{pw}));
@@ -401,6 +404,7 @@ sub build_authinfo
 
 sub build_disclose
 {
+ shift if (UNIVERSAL::isa($_[0], __PACKAGE__));
  my $contact=shift;
  my $d=$contact->disclose();
  return () unless ($d && ref($d));

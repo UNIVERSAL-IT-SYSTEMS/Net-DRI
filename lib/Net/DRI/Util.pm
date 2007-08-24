@@ -140,8 +140,8 @@ sub create_trid_1
 
 sub is_hostname ## RFC952/1123
 {
- my ($name)=@_;
- 
+ my ($name,$allowidn)=@_;
+
  return 0 unless defined($name);
 
  my @d=split(/\./,$name,-1);
@@ -149,7 +149,8 @@ sub is_hostname ## RFC952/1123
  { 
   return 0 unless (defined($d) && ($d ne ''));
   return 0 unless (length($d)<=63);
-  return 0 if (($d=~m/[^A-Za-z0-9\-]/) || ($d=~m/^-/) || ($d=~m/-$/));
+  return 0 if ((!defined($allowidn) || !$allowidn) &&
+	(($d=~m/[^A-Za-z0-9\-]/) || ($d=~m/^-/) || ($d=~m/-$/)));
  }
  return 1;
 }

@@ -137,12 +137,12 @@ sub verify_name_host
 
 sub check_name 
 {
- my ($self,$ndr,$data,$dots)=@_;
- ($data,$dots)=($ndr,$data) unless (defined($ndr) && $ndr && (ref($ndr) eq 'Net::DRI::Registry'));
+ my ($self,$ndr,$data,$dots,$allowidn)=@_;
+ ($data,$dots,$allowidn)=($ndr,$data,$dots) unless (defined($ndr) && $ndr && (ref($ndr) eq 'Net::DRI::Registry'));
 
  return 1 unless (defined($data) && $data);
 
- return 2 unless Net::DRI::Util::is_hostname($data);
+ return 2 unless Net::DRI::Util::is_hostname($data,$allowidn);
  my @d=split(/\./,$data);
  return 3 if ($dots && 1+$dots!=@d);
  

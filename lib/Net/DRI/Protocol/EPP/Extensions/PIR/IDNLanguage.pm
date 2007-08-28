@@ -72,7 +72,10 @@ sub register_commands
 {
  my ($class,$version)=@_;
  my %tmp=(
-           create => [ \&create, undef ],
+           create =>		[ \&create, undef ],
+	   check =>		[ \&add_idn_scriptparams_check, undef ],
+	   check_multi =>	[ \&add_idn_scriptparams_check, undef ],
+	   info =>		[ undef, \&parse ]
          );
 
  return { 'domain' => \%tmp };
@@ -94,6 +97,32 @@ sub create
   my $eid=$mes->command_extension_register('idn:create','xmlns:idn="urn:iana:xml:ns:idn" xsi:schemaLocation="urn:iana:xml:ns:idn idn.xsd"');
   $mes->command_extension($eid,['idn:script', $rd->{language}]);
  }
+}
+
+sub add_idn_scriptparams_check
+{
+ my ($epp, $domain, $rd) = @_;
+ my $mes = $epp->message();
+
+ if ($domain =~ /^xn--/)
+ {
+  my $eid=$mes->command_extension_register('idn:check','xmlns:idn="urn:iana:xml:ns:idn" xsi:schemaLocation="urn:iana:xml:ns:idn idn.xsd"');
+  $mes->command_extension($eid,['idn:script']);
+ }
+}
+
+sub parse
+{
+ my ($po,$otype,$oaction,$oname,$rinfo)=@_;
+ my $mes=$po->message();
+ my $infdata=$mes->get_content('infData', 'urn:iana:xml:ns:idn', 1);
+ my $c;
+
+ return unless ($infdata);
+
+ $c = $infdata->getElementsByTagNameNS('urn:iana:xml:ns:idn', 'script');
+
+ $rinfo->{$otype}->{$oname}->{language} = $c->shift()->getFirstChild()->getData();
 }
 
 ####################################################################################################

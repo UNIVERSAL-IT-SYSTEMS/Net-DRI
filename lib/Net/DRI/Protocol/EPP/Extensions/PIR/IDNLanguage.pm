@@ -104,10 +104,10 @@ sub add_idn_scriptparams_check
  my ($epp, $domain, $rd) = @_;
  my $mes = $epp->message();
 
- if ($domain =~ /^xn--/)
+ if (defined($rd) && (ref($rd) eq 'HASH') && exists($rd->{language}))
  {
   my $eid=$mes->command_extension_register('idn:check','xmlns:idn="urn:iana:xml:ns:idn" xsi:schemaLocation="urn:iana:xml:ns:idn idn.xsd"');
-  $mes->command_extension($eid,['idn:script']);
+  $mes->command_extension($eid,['idn:script', $rd->{language}]);
  }
 }
 

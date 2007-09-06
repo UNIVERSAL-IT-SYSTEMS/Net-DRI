@@ -75,7 +75,8 @@ sub register_commands
            create =>		[ \&create, undef ],
 	   check =>		[ \&add_idn_scriptparams_check, undef ],
 	   check_multi =>	[ \&add_idn_scriptparams_check, undef ],
-	   info =>		[ undef, \&parse ]
+	   info =>		[ undef, \&parse ],
+	   update =>		[ \&add_idn_script_update, undef ]
          );
 
  return { 'domain' => \%tmp };
@@ -123,6 +124,18 @@ sub parse
  $c = $infdata->getElementsByTagNameNS('urn:iana:xml:ns:idn', 'script');
 
  $rinfo->{$otype}->{$oname}->{language} = $c->shift()->getFirstChild()->getData();
+}
+
+sub add_idn_script_update
+{
+ my ($epp,$domain,$todo)=@_;
+ my $mes = $epp->message();
+
+ if (grep { ! /^(?:set)$/ } $todo->types('language'))
+ {
+  my $eid = $mes->command_extension_register('idn:update','xmlns:idn="urn:iana:xml:ns:idn" xsi:schemaLocation="urn:iana:xml:ns:idn idn.xsd"');
+  $mes->command_extension($eid,['idn:script', $todo->get('language')]);
+ }
 }
 
 ####################################################################################################

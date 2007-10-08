@@ -403,7 +403,9 @@ sub build_contact_noregistrant
 {
  my $cs=shift;
  my @d;
- foreach my $t (sort($cs->types()))
+ # All nonstandard contacts go into the extension section
+ foreach my $t (sort(grep { $_ eq 'registrant' || $_ eq 'admin' ||
+	$_ eq 'tech' || $_ eq 'billing' } $cs->types()))
  {
   next if ($t eq 'registrant');
   my @o=$cs->get($t);

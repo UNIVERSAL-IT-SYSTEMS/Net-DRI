@@ -164,27 +164,31 @@ sub user_create
  return unless (UNIVERSAL::isa($contact, 'Net::DRI::Data::Contact::ASIA'));
 
  push(@ceddata, ['asia:ccLocality', $contact->cedcc()])
-	if (UNIVERSAL::can($contact, 'cedcc') && defined($contact->cedcc()));
+	if (UNIVERSAL::can($contact, 'cedcc') && defined($contact->cedcc()) &&
+		length($contact->cedcc()));
  push(@ceddata, ['asia:localitySp', $contact->cedsp()])
-	if (UNIVERSAL::can($contact, 'cedsp') && defined($contact->cedsp()));
+	if (UNIVERSAL::can($contact, 'cedsp') && defined($contact->cedsp()) &&
+		length($contact->cedsp()));
  push(@ceddata, ['asia:localityCity', $contact->cedcity()])
 	if (UNIVERSAL::can($contact, 'cedcity') &&
-		defined($contact->cedcity()));
+		defined($contact->cedcity()) && length($contact->cedcity()));
  push(@ceddata, ['asia:legalEntityType', $contact->cedetype()])
 	if (UNIVERSAL::can($contact, 'cedetype') &&
-		defined($contact->cedetype()));
+		defined($contact->cedetype()) && length($contact->cedetype()));
  push(@ceddata, ['asia:identForm', $contact->cediform()])
 	if (UNIVERSAL::can($contact, 'cediform') &&
-		defined($contact->cediform()));
+		defined($contact->cediform()) && length($contact->cediform()));
  push(@ceddata, ['asia:identNumber', $contact->cedinum()])
 	if (UNIVERSAL::can($contact, 'cedinum') &&
-		defined($contact->cedinum()));
+		defined($contact->cedinum()) && length($contact->cedinum()));
  push(@ceddata, ['asia:otherLEType', $contact->cedothertype()])
 	if (UNIVERSAL::can($contact, 'cedothertype') &&
-		defined($contact->cedothertype()));
+		defined($contact->cedothertype()) &&
+		length($contact->cedothertype()));
  push(@ceddata, ['asia:otherIdentForm', $contact->cedoiform()])
 	if (UNIVERSAL::can($contact, 'cedoiform') &&
-		defined($contact->cedoiform()));
+		defined($contact->cedoiform()) &&
+		length($contact->cedoiform()));
 
  return unless (@ceddata);
 

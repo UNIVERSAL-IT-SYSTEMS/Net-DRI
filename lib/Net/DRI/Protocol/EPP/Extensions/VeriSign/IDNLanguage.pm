@@ -86,7 +86,7 @@ sub create
  my ($epp,$domain,$rd)=@_;
  my $mes=$epp->message();
 
- Net::DRI::Exception::usererr_insufficient_parameters('Language tag must be provided') unless (defined($rd) && (ref($rd) eq 'HASH') && exists($rd->{language}));
+ return unless (defined($rd) && (ref($rd) eq 'HASH') && exists($rd->{language}));
 
  Net::DRI::Exception::usererr_invalid_parameters('IDN language tag must be of type XML schema language') unless Net::DRI::Util::xml_is_language($rd->{language});
 

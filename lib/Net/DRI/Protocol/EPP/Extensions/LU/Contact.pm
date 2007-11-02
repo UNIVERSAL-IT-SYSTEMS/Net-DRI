@@ -112,9 +112,10 @@ sub info_parse
   while($c)
   {
    my $name=$c->localname() || $c->nodeName();
-   next unless $name;
- 
-   $co->disclose()->{$name.'_loc'}=$c->getAttribute('flag');
+
+   $co->disclose()->{$name.'_loc'}=$c->getAttribute('flag')
+   	if (defined($name) && $name ne '#text');
+
    $c=$c->getNextSibling();
   }
  }

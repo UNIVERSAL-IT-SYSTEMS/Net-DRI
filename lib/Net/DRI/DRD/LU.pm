@@ -78,7 +78,7 @@ sub new
  return $self;
 }
 
-sub periods  { return map { DateTime::Duration->new(years => $_) } (1); } ## not taken into account by registry as renewals happen automatically
+sub periods  { return undef; } ## not taken into account by registry as renewals happen automatically
 sub name     { return 'DNSLU'; }
 sub tlds     { return ('lu'); }
 sub object_types { return ('domain','contact','ns'); }

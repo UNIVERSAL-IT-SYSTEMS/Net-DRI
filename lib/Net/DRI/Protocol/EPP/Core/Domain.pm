@@ -390,7 +390,7 @@ sub build_contact_noregistrant
  my $cs=shift;
  my @d;
  # All nonstandard contacts go into the extension section
- foreach my $t (sort(grep { $_ eq 'admin' || $_ eq 'tech' || $_ eq 'billing' } $cs->types()))
+ foreach my $t (sort(grep { $_ eq 'admin' || $_ eq 'tech' || $_ eq 'billing' || $_ eq 'onsite' } $cs->types()))
  {
   my @o=$cs->get($t);
   push @d,map { ['domain:contact',$_->srid(),{'type'=>$t}] } @o;

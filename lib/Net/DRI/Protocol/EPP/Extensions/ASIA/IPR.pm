@@ -20,6 +20,7 @@ package Net::DRI::Protocol::EPP::Extensions::ASIA::IPR;
 use strict;
 
 use DateTime;
+use Date::Parse;
 
 our $VERSION=do { my @r=(q$Revision: 1.1 $=~/\d+/g); sprintf("%d".".%02d" x $#r, @r); };
 

@@ -1,6 +1,6 @@
-## Domain Registry Interface, EPP Domain commands (RFC4931)
+## Domain Registry Interface, CN domain transactions extension
 ##
-## Copyright (c) 2005,2006,2007 Patrick Mevzek <netdri@dotandco.com>. All rights reserved.
+## Copyright (c) 2006,2007 Patrick Mevzek <netdri@dotandco.com>. All rights reserved.
 ##
 ## This file is part of Net::DRI
 ##
@@ -15,25 +15,20 @@
 #
 ####################################################################################################
 
-package Net::DRI::Protocol::EPP::Core::Domain;
+package Net::DRI::Protocol::EPP::Extensions::CN::Domain;
 
 use strict;
 
 use Net::DRI::Util;
-use Net::DRI::Exception;
-use Net::DRI::Data::Hosts;
-use Net::DRI::Data::ContactSet;
-use Net::DRI::Protocol::EPP;
+#use Net::DRI::Protocol::EPP::Core::Domain;
 
-use DateTime::Format::ISO8601;
-
-our $VERSION=do { my @r=(q$Revision: 1.13 $=~/\d+/g); sprintf("%d".".%02d" x $#r, @r); };
+our $VERSION = do { my @r = ( q$Revision: 1.2 $ =~ /\d+/g ); sprintf( "%d" . ".%02d" x $#r, @r ); };
 
 =pod
 
 =head1 NAME
 
-Net::DRI::Protocol::EPP::Core::Domain - EPP Domain commands (RFC4931 obsoleting RFC3731) for Net::DRI
+Net::DRI::Protocol::EPP::Extensions::CN::Domain - .CN Domain extension
 
 =head1 DESCRIPTION
 
@@ -57,7 +52,7 @@ Patrick Mevzek, E<lt>netdri@dotandco.comE<gt>
 
 =head1 COPYRIGHT
 
-Copyright (c) 2005,2006,2007 Patrick Mevzek <netdri@dotandco.com>.
+Copyright (c) 2006,2007 Patrick Mevzek <netdri@dotandco.com>.
 All rights reserved.
 
 This program is free software; you can redistribute it and/or modify
@@ -71,26 +66,26 @@ See the LICENSE file that comes with this distribution for more details.
 
 ####################################################################################################
 
-sub register_commands
-{
- my ($class,$version)=@_;
- my %tmp=(
-           check  => [ \&check, \&check_parse ],
-           info   => [ \&info, \&info_parse ],
-           transfer_query  => [ \&transfer_query, \&transfer_parse ],
-           create => [ \&create, \&create_parse ],
-           delete => [ \&delete ],
-           renew => [ \&renew, \&renew_parse ],
-           transfer_request => [ \&transfer_request, \&transfer_parse ],
-           transfer_cancel  => [ \&transfer_cancel,\&transfer_parse ],
-           transfer_answer  => [ \&transfer_answer,\&transfer_parse ],
-           update => [ \&update ],
-           review_complete => [ undef, \&pandata_parse ],
-         );
+sub register_commands {
+       my ( $class, $version ) = @_;
+       my %tmp=(
+		check		=> [ undef, \&check_parse ],
+		info		=> [ \&info, \&info_parse ],
+		transfer_query	=> [ \&transfer_query, undef ],
+		create		=> [ \&create, undef ],
+		renew		=> [ undef, \&renew_parse ],
+		transfer_request=> [ \&transfer_request, undef ],
+		transfer_cancel	=> [ \&transfer_cancel,undef ],
+		transfer_answer	=> [ \&transfer_answer,undef ],
+		update		=> [ \&update ],
+               );
+      
+       $tmp{check_multi}=$tmp{check};
 
- $tmp{check_multi}=$tmp{check};
- return { 'domain' => \%tmp };
+       return { 'domain' => \%tmp };
 }
+
+##################################################################################################
 
 sub build_command
 {
@@ -115,7 +110,7 @@ sub build_command
 sub build_authinfo
 {
  my $rauth=shift;
- return ['domain:authInfo',['domain:pw',$rauth->{pw},exists($rauth->{roid})? { 'roid' => $rauth->{roid} } : undef]];
+ return ['domain:authInfo',$rauth->{pw}, {type => 'pw'}];
 }
 
 sub build_period
@@ -139,17 +134,11 @@ sub build_period
  return ['domain:period',$v,{'unit' => $u}];
 }
 
-####################################################################################################
+
+##################################################################################################
+
+
 ########### Query commands
-
-sub check
-{
- my ($epp,$domain,$rd)=@_;
- my $mes=$epp->message();
- my @d=build_command($mes,'check',$domain);
- $mes->command_body(\@d);
-}
-
 
 sub check_parse
 {
@@ -161,22 +150,14 @@ sub check_parse
  return unless $chkdata;
  foreach my $cd ($chkdata->getElementsByTagNameNS($mes->ns('domain'),'cd'))
  {
-  my $c=$cd->getFirstChild();
   my $domain;
-  while($c)
-  {
-   next unless ($c->nodeType() == 1); ## only for element nodes
-   my $n=$c->localname() || $c->nodeName();
-   if ($n eq 'name')
-   {
-    $domain=lc($c->getFirstChild()->getData());
+    $domain=lc($cd->getFirstChild()->getData());
     $rinfo->{domain}->{$domain}->{action}='check';
-    $rinfo->{domain}->{$domain}->{exist}=1-Net::DRI::Util::xml_parse_boolean($c->getAttribute('avail'));
-   } elsif ($n eq 'reason')
-   {
-    $rinfo->{domain}->{$domain}->{exist_reason}=$c->getFirstChild()->getData();
-   }
-  } continue { $c=$c->getNextSibling(); }
+    if ($cd->getAttribute('x') eq '+') {
+       $rinfo->{domain}->{$domain}->{exist}=1;
+    } else {
+       $rinfo->{domain}->{$domain}->{exist}=0;
+    }
  }
 }
 
@@ -188,16 +169,17 @@ sub verify_rd
  return 1;
 }
 
+
 sub info
 {
  my ($epp,$domain,$rd)=@_;
  my $mes=$epp->message();
- my $hosts='all';
- $hosts=$rd->{hosts} if (defined($rd) && (ref($rd) eq 'HASH') && exists($rd->{hosts}) && ($rd->{hosts}=~m/^(?:all|del|sub|none)$/));
- my @d=build_command($mes,'info',$domain,{'hosts'=> $hosts});
+ my @d=build_command($mes,'info',$domain);
  push @d,build_authinfo($rd->{auth}) if (verify_rd($rd,'auth') && (ref($rd->{auth}) eq 'HASH'));
  $mes->command_body(\@d);
 }
+
+
 
 sub info_parse
 {
@@ -206,13 +188,12 @@ sub info_parse
  return unless $mes->is_success();
  my $infdata=$mes->get_content('infData',$mes->ns('domain'));
  return unless $infdata;
- my (@s,@host);
+ my (@s,@host,$ns);
  my $cs=Net::DRI::Data::ContactSet->new();
  my $cf=$po->factories()->{contact};
  my $c=$infdata->getFirstChild();
  while ($c)
  {
-  next unless ($c->nodeType() == 1); ## only for element nodes
   my $name=$c->localname() || $c->nodeName();
   next unless $name;
   if ($name eq 'name')
@@ -234,7 +215,8 @@ sub info_parse
    $cs->add($cf->()->srid($c->getFirstChild()->getData()),$c->getAttribute('type'));
   } elsif ($name eq 'ns')
   {
-   $rinfo->{domain}->{$oname}->{ns}=parse_ns($c);
+       $ns=Net::DRI::Data::Hosts->new() if !$ns;
+       $ns->add($c->getFirstChild()->getData());
   } elsif ($name eq 'host')
   {
    push @host,$c->getFirstChild()->getData();
@@ -246,60 +228,19 @@ sub info_parse
    $rinfo->{domain}->{$oname}->{$1}=DateTime::Format::ISO8601->new()->parse_datetime($c->getFirstChild()->getData());
   } elsif ($name eq 'authInfo')
   {
-   my $pw=($c->getElementsByTagNameNS($mes->ns('domain'),'pw'))[0]; ## will be empty on domain:info request for objects we do not own
-   $rinfo->{domain}->{$oname}->{auth} = {pw => ($pw->hasChildNodes()) ?
-	$pw->getFirstChild()->getData() : undef } if (defined($pw));
+   my $pw=$c->getFirstChild()->getData();
+   $rinfo->{domain}->{$oname}->{auth}={pw => ($pw)? $pw : undef };
   }
- } continue { $c=$c->getNextSibling(); }
+  $c=$c->getNextSibling();
+ }
 
  $rinfo->{domain}->{$oname}->{contact}=$cs;
  $rinfo->{domain}->{$oname}->{status}=$po->create_local_object('status')->add(@s);
  $rinfo->{domain}->{$oname}->{host}=Net::DRI::Data::Hosts->new_set(@host) if @host;
+ $rinfo->{domain}->{$oname}->{ns}=$ns if $ns;
 }
 
-sub parse_ns ## RFC 4931 §1.1
-{
- my $node=shift;
- my $ns=Net::DRI::Data::Hosts->new();
 
- my $n=$node->getFirstChild();
- while($n)
- {
-  next unless ($n->nodeType() == 1); ## only for element nodes
-  my $name=$n->localname() || $n->nodeName();
-  next unless $name;
-  if ($name eq 'hostObj')
-  {
-   $ns->add($n->getFirstChild()->getData());
-  } elsif ($name eq 'hostAttr')
-  {
-   my ($hostname,@ip4,@ip6);
-   my $nn=$n->getFirstChild();
-   while($nn)
-   {
-    next unless ($nn->nodeType() == 1); ## only for element nodes
-    my $name2=$nn->localname() || $nn->nodeName();
-    next unless $name2;
-    if ($name2 eq 'hostName')
-    {
-     $hostname=$nn->getFirstChild()->getData();
-    } elsif ($name2 eq 'hostAddr')
-    {
-     my $ip=$nn->getAttribute('ip') || 'v4';
-     if ($ip eq 'v6')
-     {
-      push @ip6,$nn->getFirstChild()->getData();
-     } else
-     {
-      push @ip4,$nn->getFirstChild()->getData();
-     }
-    }
-   } continue { $nn=$nn->getNextSibling(); }
-   $ns->add($hostname,\@ip4,\@ip6);
-  }
- } continue { $n=$n->getNextSibling(); }
- return $ns;
-}
 
 sub transfer_query
 {
@@ -310,36 +251,6 @@ sub transfer_query
  $mes->command_body(\@d);
 }
 
-sub transfer_parse
-{
- my ($po,$otype,$oaction,$oname,$rinfo)=@_;
- my $mes=$po->message();
- return unless $mes->is_success();
-
- my $trndata=$mes->get_content('trnData',$mes->ns('domain'));
- return unless $trndata;
-
- my $c=$trndata->getFirstChild();
- while ($c)
- {
-  next unless ($c->nodeType() == 1); ## only for element nodes
-  my $name=$c->localname() || $c->nodeName();
-  next unless $name;
-
-  if ($name eq 'name')
-  {
-   $oname=lc($c->getFirstChild()->getData());
-   $rinfo->{domain}->{$oname}->{action}='transfer';
-   $rinfo->{domain}->{$oname}->{exist}=1;
-  } elsif ($name=~m/^(trStatus|reID|acID)$/)
-  {
-   $rinfo->{domain}->{$oname}->{$1}=$c->getFirstChild()->getData();
-  } elsif ($name=~m/^(reDate|acDate|exDate)$/)
-  {
-   $rinfo->{domain}->{$oname}->{$1}=DateTime::Format::ISO8601->new()->parse_datetime($c->getFirstChild()->getData());
-  }
- } continue { $c=$c->getNextSibling(); }
-}
 
 ############ Transform commands
 
@@ -390,9 +301,9 @@ sub build_contact_noregistrant
 {
  my $cs=shift;
  my @d;
- # All nonstandard contacts go into the extension section
- foreach my $t (sort(grep { $_ eq 'admin' || $_ eq 'tech' || $_ eq 'billing' || $_ eq 'onsite' } $cs->types()))
+ foreach my $t (sort($cs->types()))
  {
+  next if ($t eq 'registrant');
   my @o=$cs->get($t);
   push @d,map { ['domain:contact',$_->srid(),{'type'=>$t}] } @o;
  }
@@ -403,6 +314,8 @@ sub build_ns
 {
  my ($epp,$ns,$domain,$xmlns)=@_;
 
+ $xmlns='domain' unless defined($xmlns);
+
  my @d;
  my $asattr=$epp->{hostasattr};
 
@@ -411,78 +324,20 @@ sub build_ns
   foreach my $i (1..$ns->count())
   {
    my ($n,$r4,$r6)=$ns->get_details($i);
-   my @h;
-   push @h,['domain:hostName',$n];
    if (($n=~m/\S+\.${domain}$/i) || (lc($n) eq lc($domain)) || ($asattr==2))
    {
-    push @h,map { ['domain:hostAddr',$_,{ip=>'v4'}] } @$r4 if @$r4;
-    push @h,map { ['domain:hostAddr',$_,{ip=>'v6'}] } @$r6 if @$r6;
+    push @d,map { [$xmlns.':ns',$_,{ip=>'v4'}] } @$r4 if @$r4;
+    push @d,map { [$xmlns.':ns',$_,{ip=>'v6'}] } @$r6 if @$r6;
    }
-   push @d,['domain:hostAttr',@h];
   }
  } else
  {
-  @d=map { ['domain:hostObj',$_] } $ns->get_names();
+  @d=map { [$xmlns.':ns',$_] } $ns->get_names();
  }
 
- $xmlns='domain' unless defined($xmlns);
- return [$xmlns.':ns',@d];
+ return @d;
 }
 
-sub create_parse
-{
- my ($po,$otype,$oaction,$oname,$rinfo)=@_;
- my $mes=$po->message();
- return unless $mes->is_success();
-
- my $credata=$mes->get_content('creData',$mes->ns('domain'));
- return unless $credata;
-
- my $c=$credata->getFirstChild();
- while ($c)
- {
-  next unless ($c->nodeType() == 1); ## only for element nodes
-  my $name=$c->localname() || $c->nodeName();
-  next unless $name;
-
-  if ($name eq 'name')
-  {
-   $oname=lc($c->getFirstChild()->getData());
-   $rinfo->{domain}->{$oname}->{action}='create';
-   $rinfo->{domain}->{$oname}->{exist}=1;
-  } elsif ($name=~m/^(crDate|exDate)$/)
-  {
-   $rinfo->{domain}->{$oname}->{$1}=DateTime::Format::ISO8601->new()->parse_datetime($c->getFirstChild()->getData());
-  }
- } continue { $c=$c->getNextSibling(); }
-}
-
-sub delete
-{
- my ($epp,$domain,$rd)=@_;
- my $mes=$epp->message();
- my @d=build_command($mes,'delete',$domain);
- $mes->command_body(\@d);
-}
-
-sub renew
-{
- my ($epp,$domain,$period,$curexp,$rd)=@_;
- Net::DRI::Exception::usererr_insufficient_parameters("current expiration year") unless defined($curexp);
- $curexp=$curexp->set_time_zone('UTC')->strftime("%Y-%m-%d") if (ref($curexp) && UNIVERSAL::isa($curexp,'DateTime'));
- Net::DRI::Exception::usererr_invalid_parameters("current expiration year must be YYYY-MM-DD") unless $curexp=~m/^\d{4}-\d{2}-\d{2}$/;
- 
- my $mes=$epp->message();
- my @d=build_command($mes,'renew',$domain);
- push @d,['domain:curExpDate',$curexp];
- if (defined($period))
- {
-  Net::DRI::Util::check_isa($period,'DateTime::Duration');
-  push @d,build_period($period);
- }
-
- $mes->command_body(\@d);
-}
 
 sub renew_parse
 {
@@ -491,12 +346,14 @@ sub renew_parse
  return unless $mes->is_success();
 
  my $rendata=$mes->get_content('renData',$mes->ns('domain'));
+ if (!$rendata) {
+       $rendata=$mes->get_content('creData',$mes->ns('domain'));
+ }
  return unless $rendata;
 
  my $c=$rendata->getFirstChild();
  while ($c)
  {
-  next unless ($c->nodeType() == 1); ## only for element nodes
   my $name=$c->localname() || $c->nodeName();
   next unless $name;
 
@@ -509,8 +366,10 @@ sub renew_parse
   {
    $rinfo->{domain}->{$oname}->{$1}=DateTime::Format::ISO8601->new()->parse_datetime($c->getFirstChild()->getData());
   }
- } continue { $c=$c->getNextSibling(); }
+  $c=$c->getNextSibling();
+ }
 }
+
 
 sub transfer_request
 {
@@ -589,44 +448,17 @@ sub update
  $chg=$todo->set('auth');
  push @chg,build_authinfo($chg) if ($chg && ref($chg));
  push @d,['domain:chg',@chg] if @chg;
+
+ ## RFC3731 is ambigous
+ ## The text says that domain:add domain:rem or domain:chg must be there,
+ ## but the XML schema has minOccurs=0 for each of them
+ ## The consensus on the mailing-list is that the XML schema is normative
+ ## However some server might follow the text, in which case we will need the following lines
+ ## which were removed for Net::DRI 0.16
+## my $hasext=(grep { ! /^(?:ns|status|contact|registrant|authinfo)$/ } $todo->types())? 1 : 0;
+## push @d,['domain:chg'] if ($hasext && !@chg);
+ 
  $mes->command_body(\@d);
-}
-
-####################################################################################################
-## RFC4931 §3.3  Offline Review of Requested Actions
-
-sub pandata_parse
-{
- my ($po,$otype,$oaction,$oname,$rinfo)=@_;
- my $mes=$po->message();
- return unless $mes->is_success();
-
- my $pandata=$mes->get_content('panData',$mes->ns('domain'));
- return unless $pandata;
-
- my $c=$pandata->firstChild();
- while ($c)
- {
-  next unless ($c->nodeType() == 1); ## only for element nodes
-  my $name=$c->localname() || $c->nodeName();
-  next unless $name;
-
-  if ($name eq 'name')
-  {
-   $oname=lc($c->getFirstChild()->getData());
-   $rinfo->{domain}->{$oname}->{action}='create_review';
-   $rinfo->{domain}->{$oname}->{result}=Net::DRI::Util::xml_parse_boolean($c->getAttribute('paResult'));
-   $rinfo->{domain}->{$oname}->{exist}=$rinfo->{domain}->{$oname}->{result};
-  } elsif ($name eq 'paTRID')
-  {
-   my @tmp=$c->getElementsByTagNameNS($mes->ns('_main'),'clTRID');
-   $rinfo->{domain}->{$oname}->{trid}=$tmp[0]->getFirstChild()->getData() if (@tmp && $tmp[0]);
-   $rinfo->{domain}->{$oname}->{svtrid}=($c->getElementsByTagNameNS($mes->ns('_main'),'svTRID'))[0]->getFirstChild()->getData();
-  } elsif ($name eq 'paDate')
-  {
-   $rinfo->{domain}->{$oname}->{date}=DateTime::Format::ISO8601->new()->parse_datetime($c->firstChild->getData());
-  }
- } continue { $c=$c->getNextSibling(); }
 }
 
 ####################################################################################################

@@ -80,7 +80,7 @@ sub new
 
  my $self=$c->SUPER::new(); ## we are now officially a Net::DRI::Protocol object
  $self->name('EPP');
- $version=Net::DRI::Util::check_equal($version,['1.0'],'1.0');
+ $version=Net::DRI::Util::check_equal($version,['1.0','0.4'],'1.0');
  $self->version($version);
 
  $self->capabilities({ 'host_update'   => { 'ip' => ['add','del'], 'status' => ['add','del'], 'name' => ['set'] },
@@ -89,11 +89,22 @@ sub new
                      });
 
  $self->{hostasattr}=$drd->info('host_as_attr') || 0;
- $self->{ns}={ _main   => ['urn:ietf:params:xml:ns:epp-1.0','epp-1.0.xsd'],
-               domain  => ['urn:ietf:params:xml:ns:domain-1.0','domain-1.0.xsd'],
-               host    => ['urn:ietf:params:xml:ns:host-1.0','host-1.0.xsd'],
-               contact => ['urn:ietf:params:xml:ns:contact-1.0','contact-1.0.xsd'],
-             };
+ if ($version gt '0.4')
+ {
+  $self->{ns}={ _main   => ['urn:ietf:params:xml:ns:epp-1.0','epp-1.0.xsd'],
+		domain  => ['urn:ietf:params:xml:ns:domain-1.0','domain-1.0.xsd'],
+		host    => ['urn:ietf:params:xml:ns:host-1.0','host-1.0.xsd'],
+		contact => ['urn:ietf:params:xml:ns:contact-1.0','contact-1.0.xsd'],
+  };
+ }
+ else
+ {
+  $self->{ns}={ _main   => ['urn:iana:xml:ns:epp-1.0','epp-1.0.xsd'],
+		domain  => ['urn:iana:xml:ns:domain-1.0','domain-1.0.xsd'],
+		host    => ['urn:iana:xml:ns:host-1.0','host-1.0.xsd'],
+		contact => ['urn:iana:xml:ns:contact-1.0','contact-1.0.xsd'],
+  };
+ }
 
  $self->factories({ 
                    message => sub { my $m=Net::DRI::Protocol::EPP::Message->new(@_); $m->ns($self->{ns}); $m->version($version); return $m; },

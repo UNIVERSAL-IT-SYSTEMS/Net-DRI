@@ -27,8 +27,10 @@ use Net::DRI::Protocol::ResultStatus;
 use Net::DRI::Exception;
 use Net::DRI::Util;
 
+use Carp qw(confess);
+
 use base qw(Class::Accessor::Chained::Fast Net::DRI::Protocol::Message);
-__PACKAGE__->mk_accessors(qw(version errcode errmsg errlang command command_body cltrid svtrid msg_id node_resdata node_extension node_msg result_greeting result_extra_info));
+__PACKAGE__->mk_accessors(qw(version errcode errmsg errlang command command_body cltrid svtrid ver04login msg_id node_resdata node_extension node_msg result_greeting result_extra_info));
 
 our $VERSION=do { my @r=(q$Revision: 1.18 $=~/\d+/g); sprintf("%d".".%02d" x $#r, @r); };
 
@@ -203,6 +205,18 @@ sub as_string
   push @d,'</extension>';
  }
 
+ #### login for version 0.4
+ my $ver04login = $self->ver04login();
+ my $loginstr = "<login>\n <svcs>\n";
+ foreach my $obj (qw(contact host domain svcsub))
+ {
+ 	$loginstr .= '  <' . $obj . ':svc xmlns:' . $obj .
+		'="urn:iana:xml:ns:' . $obj . '-1.0" xsi:schemaLocation="' .
+		'urn:iana:xml:ns:' . $obj . '-1.0 ' . $obj . "-1.0.xsd\"/>\n";
+ }
+ $loginstr .= " </svcs>\n</login>\n";
+ push(@d, $loginstr) if (defined($ver04login) && $ver04login && !$nocommand);
+
  ## OPTIONAL clTRID
  my $cltrid=$self->cltrid();
  push @d,'<clTRID>'.$cltrid.'</clTRID>' if (defined($cltrid) && $cltrid && Net::DRI::Util::xml_is_token($cltrid,3,64) && !$nocommand);
@@ -211,7 +225,8 @@ sub as_string
 
  my $m=Encode::encode('utf8',join('',@d));
  my $l=pack('N',4+length($m)); ## RFC 4934 §4
- return (defined($to) && ($to eq 'tcp'))? $l.$m : $m;
+ return (defined($to) && ($to eq 'tcp') && ($self->version() gt '0.4'))?
+	$l.$m : $m;
 }
 
 sub _toxml
@@ -287,22 +302,30 @@ sub parse
 
  my $NS=$self->topns();
  my $parser=XML::LibXML->new();
- my $doc=$parser->parse_string($dc->as_string());
+ my $xstr = $dc->as_string();
+ $xstr =~ s/^\s*//;
+ my $doc=$parser->parse_string($xstr);
  my $root=$doc->getDocumentElement();
  Net::DRI::Exception->die(0,'protocol/EPP',1,'Unsuccessfull parse, root element is not epp') unless ($root->getName() eq 'epp');
 
- if ($root->getElementsByTagNameNS($NS,'greeting'))
+ if ($root->getElementsByTagNameNS($NS,'greeting') ||
+	$root->getElementsByTagName('greeting'))
  {
+  my @el = $root->getElementsByTagNameNS($NS, 'greeting');
+  @el = $root->getElementsByTagName('greeting') unless (@el);
   $self->errcode(1000); ## fake an OK
-  my $r=$self->parse_greeting(($root->getElementsByTagNameNS($NS,'greeting'))[0]);
+  my $r=$self->parse_greeting($el[0]);
   $self->result_greeting($r);
   return;
  }
- Net::DRI::Exception->die(0,'protocol/EPP',1,'Unsuccessfull parse, no response block') unless $root->getElementsByTagNameNS($NS,'response');
- my $res=($root->getElementsByTagNameNS($NS,'response'))[0];
+ my @rtags = $root->getElementsByTagNameNS($NS, 'response');
+ @rtags = $root->getElementsByTagName('response') unless (@rtags);
+ Net::DRI::Exception->die(0,'protocol/EPP',1,'Unsuccessfull parse, no response block') unless (@rtags);
+ my $res = $rtags[0];
 
  ## result block(s)
  my @results=$res->getElementsByTagNameNS($NS,'result'); ## one element if success, multiple elements if failure RFC4930 §2.6
+ @results = $res->getElementsByTagName('result') unless (@results);
  foreach (@results)
  {
   my ($errc,$errm,$errl)=$self->parse_result($_);
@@ -312,10 +335,12 @@ sub parse
   $self->errlang($errl);
  }
 
- if ($res->getElementsByTagNameNS($NS,'msgQ')) ## OPTIONAL
+ if ($res->getElementsByTagNameNS($NS,'msgQ') || $res->getElementsByTagName('msgQ')) ## OPTIONAL
  {
-  my $msgq=($res->getElementsByTagNameNS($NS,'msgQ'))[0];
-  my $id=$msgq->getAttribute('id'); ## id of the message that has just been retrieved and dequeued (RFC4930) OR id of *next* available message (RFC3730)
+  my @msgqs = $res->getElementsByTagNameNS($NS,'msgQ');
+  @msgqs = $res->getElementsByTagName('msgQ') unless (@msgqs);
+  my $msgq = $msgqs[0];
+  my $id = $msgq->getAttribute('id'); ## id of the message that has just been retrieved and dequeued (RFC4930) OR id of *next* available message (RFC3730)
   $rinfo->{message}->{info}={ count => $msgq->getAttribute('count'), id => $id };
   if ($msgq->hasChildNodes()) ## We will have childs only as a result of a poll request
   {
@@ -323,6 +348,7 @@ sub parse
    $self->msg_id($id);
    $d{qdate}=DateTime::Format::ISO8601->new()->parse_datetime(($msgq->getElementsByTagNameNS($NS,'qDate'))[0]->firstChild()->getData());
    my $msgc=($msgq->getElementsByTagNameNS($NS,'msg'))[0];
+   $msgc=($res->getElementsByTagName('msg'))[0] if (!$msgc);
    $d{lang}=$msgc->getAttribute('lang') || 'en';
 
    if (grep { $_->nodeType() == 1 } $msgc->childNodes())
@@ -340,14 +366,23 @@ sub parse
  {
   $self->node_resdata(($res->getElementsByTagNameNS($NS,'resData'))[0]);
  }
+ elsif ($res->getElementsByTagName('resData')) ## OPTIONAL
+ {
+  $self->node_resdata(($res->getElementsByTagName('resData'))[0]);
+ }
 
  if ($res->getElementsByTagNameNS($NS,'extension')) ## OPTIONAL
  {
   $self->node_extension(($res->getElementsByTagNameNS($NS,'extension'))[0]);
  }
+ elsif ($res->getElementsByTagName('extension')) ## OPTIONAL
+ {
+  $self->node_extension(($res->getElementsByTagName('extension'))[0]);
+ }
 
  ## trID
  my $trid=($res->getElementsByTagNameNS($NS,'trID'))[0];
+ $trid=($res->getElementsByTagName('trID'))[0] if (!defined($trid));
  my $tmp=extract_trids($trid,$NS,'clTRID');
  $self->cltrid($tmp) if defined($tmp);
  $tmp=extract_trids($trid,$NS,'svTRID');
@@ -357,6 +392,7 @@ sub parse
 sub extract_trids
 {
  my ($trid,$NS,$what)=@_;
+ confess('extract_trids called on empty TRID element') unless (defined($trid));
  my @tmp=$trid->getElementsByTagNameNS($NS,$what);
  return unless @tmp && defined($tmp[0]) && defined($tmp[0]->firstChild());
  return $tmp[0]->firstChild()->getData();
@@ -368,6 +404,7 @@ sub parse_result
  my $NS=$self->topns();
  my $code=$node->getAttribute('code');
  my $msg=($node->getElementsByTagNameNS($NS,'msg'))[0];
+ $msg = ($node->getElementsByTagName('msg'))[0] unless (defined($msg));
  my $lang=$msg->getAttribute('lang') || 'en';
  $msg=$msg->firstChild()->getData();
 

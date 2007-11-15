@@ -1,6 +1,6 @@
-## Domain Registry Interface, EPP Contact commands (RFC4933)
+## Domain Registry Interface, CN Contact extension
 ##
-## Copyright (c) 2005,2006,2007 Patrick Mevzek <netdri@dotandco.com>. All rights reserved.
+## Copyright (c) 2006,2007 Patrick Mevzek <netdri@dotandco.com>. All rights reserved.
 ##
 ## This file is part of Net::DRI
 ##
@@ -15,23 +15,22 @@
 #
 ####################################################################################################
 
-package Net::DRI::Protocol::EPP::Core::Contact;
+package Net::DRI::Protocol::EPP::Extensions::CN::Contact;
 
 use strict;
 
 use Net::DRI::Util;
-use Net::DRI::Exception;
-use Net::DRI::Protocol::EPP;
+#use Net::DRI::Exception;
+#use Net::DRI::Protocol::EPP;
 
-use DateTime::Format::ISO8601;
+our $VERSION=do { my @r=(q$Revision: 1.2 $=~/\d+/g); sprintf("%d".".%02d" x $#r, @r); };
 
-our $VERSION=do { my @r=(q$Revision: 1.12 $=~/\d+/g); sprintf("%d".".%02d" x $#r, @r); };
 
 =pod
 
 =head1 NAME
 
-Net::DRI::Protocol::EPP::Core::Contact - EPP Contact commands (RFC4933 obsoleting RFC3733) for Net::DRI
+Net::DRI::Protocol::EPP::Extensions::AT::Contact - NIC.AT Contact Extensions for Net::DRI
 
 =head1 DESCRIPTION
 
@@ -55,7 +54,7 @@ Patrick Mevzek, E<lt>netdri@dotandco.comE<gt>
 
 =head1 COPYRIGHT
 
-Copyright (c) 2005,2006,2007 Patrick Mevzek <netdri@dotandco.com>.
+Copyright (c) 2006,2007 Patrick Mevzek <netdri@dotandco.com>.
 All rights reserved.
 
 This program is free software; you can redistribute it and/or modify
@@ -72,64 +71,19 @@ See the LICENSE file that comes with this distribution for more details.
 sub register_commands
 {
  my ($class,$version)=@_;
- my %tmp=( 
-           check  => [ \&check, \&check_parse ],
-           info   => [ \&info, \&info_parse ],
-           transfer_query  => [ \&transfer_query, \&transfer_parse ],
-           create => [ \&create, \&create_parse ],
-           delete => [ \&delete ],
-           transfer_request => [ \&transfer_request, \&transfer_parse ],
-           transfer_cancel  => [ \&transfer_cancel,\&transfer_parse ],
-           transfer_answer  => [ \&transfer_answer,\&transfer_parse ],
-	   update => [ \&update ],
-           review_complete => [ undef, \&pandata_parse ],
+ 
+ my %tmp=(
+		check			=> [ undef, \&check_parse ],
+		create			=> [ \&create, undef ],
+		info			=> [ undef, \&info_parse ],
+		transfer_request	=> [ \&transfer_request, undef ]
          );
 
- $tmp{check_multi}=$tmp{check};
  return { 'contact' => \%tmp };
 }
 
-sub build_command
-{
- my ($msg,$command,$contact)=@_;
- my @contact=(ref($contact) eq 'ARRAY')? @$contact : ($contact);
- my @c=map { UNIVERSAL::isa($_,'Net::DRI::Data::Contact')? $_->srid() : $_ } @contact;
-
- Net::DRI::Exception->die(1,'protocol/EPP',2,"Contact id needed") unless @c;
- foreach my $n (@c)
- {
-  Net::DRI::Exception->die(1,'protocol/EPP',2,'Contact id needed') unless defined($n) && $n;
-  Net::DRI::Exception->die(1,'protocol/EPP',10,'Invalid contact id: '.$n) unless Net::DRI::Util::xml_is_token($n,3,16);
- }
-
- my $tcommand=(ref($command))? $command->[0] : $command;
- my @ns=@{$msg->ns->{contact}};
- $msg->command([$command,'contact:'.$tcommand,sprintf('xmlns:contact="%s" xsi:schemaLocation="%s %s"',$ns[0],$ns[0],$ns[1])]);
-
- my @d=map { ['contact:id',$_] } @c;
-
- if (($tcommand=~m/^(?:info|transfer)$/) && ref($contact[0]) && UNIVERSAL::isa($contact[0],'Net::DRI::Data::Contact'))
- {
-  my $az=$contact[0]->auth();
-  if ($az && ref($az) && exists($az->{pw}))
-  {
-   push @d,['contact:authInfo',['contact:pw',$az->{pw}]];
-  }
- }
- 
- return @d;
-}
-
-####################################################################################################
+##################################################################################################
 ########### Query commands
-
-sub check
-{
- my ($epp,$c)=@_;
- my $mes=$epp->message();
- my @d=build_command($mes,'check',$c);
- $mes->command_body(\@d);
-}
 
 sub check_parse
 {
@@ -141,33 +95,17 @@ sub check_parse
  return unless $chkdata;
  foreach my $cd ($chkdata->getElementsByTagNameNS($mes->ns('contact'),'cd'))
  {
-  my $c=$cd->getFirstChild();
-  my $contact;
-  while($c)
-  {
-   next unless ($c->nodeType() == 1); ## only for element nodes
-   my $n=$c->localname() || $c->nodeName();
-   if ($n eq 'id')
-   {
-    $contact=$c->getFirstChild()->getData();
+    my $contact;
+    $contact = $cd->getFirstChild()->getData();
     $rinfo->{contact}->{$contact}->{action}='check';
-    $rinfo->{contact}->{$contact}->{exist}=1-Net::DRI::Util::xml_parse_boolean($c->getAttribute('avail'));
-   }
-   if ($n eq 'reason')
-   {
-    $rinfo->{contact}->{$contact}->{exist_reason}=$c->getFirstChild()->getData();
-   }
-  } continue { $c=$c->getNextSibling(); }
+    if ($cd->getAttribute('x') eq '+') {
+       $rinfo->{contact}->{$contact}->{exist}=1;
+    } else {
+       $rinfo->{contact}->{$contact}->{exist}=0;
+    }
  }
 }
 
-sub info
-{
- my ($epp,$c)=@_;
- my $mes=$epp->message();
- my @d=build_command($mes,'info',$c);
- $mes->command_body(\@d);
-}
 
 sub info_parse
 {
@@ -184,7 +122,6 @@ sub info_parse
  my $c=$infdata->getFirstChild();
  while ($c)
  {
-  next unless ($c->nodeType() == 1);
   my $name=$c->localname() || $c->nodeName();
   next unless $name;
   if ($name eq 'id')
@@ -215,22 +152,19 @@ sub info_parse
   } elsif ($name eq 'fax')
   {
    $contact->fax(parse_tel($c));
-  } elsif ($name eq 'postalInfo')
+  } elsif ($name eq 'ascii')
   {
    parse_postalinfo($c,\%cd);
   } elsif ($name eq 'authInfo')
   {
-   my $element = ($c->getElementsByTagNameNS($mes->ns('contact'), 'pw'))[0];
-   if ($element)
-   {
-    my $pw = $element->getFirstChild()->getData();
-    $contact->auth({pw => $pw});
-   }
+   my $pw=$c->getFirstChild()->getData();
+   $contact->auth({pw => $pw});
   } elsif ($name eq 'disclose')
   {
    $contact->disclose(parse_disclose($c));
   }
- } continue { $c=$c->getNextSibling(); }
+  $c=$c->getNextSibling();
+ }
 
  $contact->name(@{$cd{name}});
  $contact->org(@{$cd{org}});
@@ -262,13 +196,12 @@ sub get_data
 sub parse_postalinfo
 {
  my ($c,$rcd)=@_;
- my $type=$c->getAttribute('type'); ## int or loc
+ my $type='int'; # we don't have a type with epp 0.4
  my $ti={loc=>0,int=>1}->{$type};
 
  my $n=$c->getFirstChild();
  while($n)
  {
-  next unless ($n->nodeType() == 1);
   my $name=$n->localname() || $n->nodeName();
   next unless $name;
   if ($name eq 'name')
@@ -283,7 +216,6 @@ sub parse_postalinfo
    my @street;
    while($nn)
    {
-    next unless ($nn->nodeType() == 1);
     my $name2=$nn->localname() || $nn->nodeName();
     next unless $name2;
     if ($name2 eq 'street')
@@ -302,13 +234,15 @@ sub parse_postalinfo
     {
      $rcd->{cc}->[$ti]=get_data($nn);
     }
-   } continue { $nn=$nn->getNextSibling(); }
+    $nn=$nn->getNextSibling();
+   }
    $rcd->{street}->[$ti]=\@street;
   }
- } continue { $n=$n->getNextSibling(); }
+  $n=$n->getNextSibling();
+ }
 }
 
-sub parse_disclose ## RFC 4933 §2.9
+sub parse_disclose ## RFC 3733 §2.9
 {
  my $c=shift;
  my $flag=Net::DRI::Util::xml_parse_boolean($c->getAttribute('flag'));
@@ -316,7 +250,6 @@ sub parse_disclose ## RFC 4933 §2.9
  my $n=$c->getFirstChild();
  while($n)
  {
-  next unless ($n->nodeType() == 1);
   my $name=$n->localname() || $n->nodeName();
   next unless $name;
   if ($name=~m/^(name|org|addr)$/)
@@ -327,49 +260,49 @@ sub parse_disclose ## RFC 4933 §2.9
   {
    $tmp{$1}=$flag;
   }
- } continue { $n=$n->getNextSibling(); }
+  $n=$n->getNextSibling();
+ }
  return \%tmp;
 }
 
-sub transfer_query
+sub transfer_request
 {
- my ($epp,$c)=@_;
- my $mes=$epp->message();
- my @d=build_command($mes,['transfer',{'op'=>'query'}],$c);
+ my ($epp, $c) = @_;
+ my $mes = $epp->message();
+ my @d = build_command($mes, ['transfer', {'op'=>'request'}], $c);
  $mes->command_body(\@d);
 }
 
-sub transfer_parse
+####################################################################################################
+
+sub build_command
 {
- my ($po,$otype,$oaction,$oname,$rinfo)=@_;
- my $mes=$po->message();
- return unless $mes->is_success();
+ my ($msg,$command,$contact)=@_;
+ my @contact=(ref($contact) eq 'ARRAY')? @$contact : ($contact);
+ my @c=map { UNIVERSAL::isa($_,'Net::DRI::Data::Contact')? $_->srid() : $_ } @contact;
 
- my $trndata=$mes->get_content('trnData',$mes->ns('contact'));
- return unless $trndata;
-
- my $c=$trndata->getFirstChild();
- while ($c)
+ Net::DRI::Exception->die(1,'protocol/EPP',2,"Contact id needed") unless @c;
+ foreach my $n (@c)
  {
-  next unless ($c->nodeType() == 1); ## only for element nodes
-  my $name=$c->localname() || $c->nodeName();
-  next unless $name;
+  Net::DRI::Exception->die(1,'protocol/EPP',2,'Contact id needed') unless defined($n) && $n;
+  Net::DRI::Exception->die(1,'protocol/EPP',10,'Invalid contact id: '.$n) unless Net::DRI::Util::xml_is_token($n,3,16);
+ }
 
-  if ($name eq 'id')
-  {
-   $oname=$c->getFirstChild()->getData();
-   $rinfo->{contact}->{$oname}->{id}=$oname;
-   $rinfo->{contact}->{$oname}->{action}='transfer';
-   $rinfo->{contact}->{$oname}->{exist}=1;
-  } elsif ($name=~m/^(trStatus|reID|acID)$/)
-  {
-   $rinfo->{contact}->{$oname}->{$1}=$c->getFirstChild()->getData();
-  } elsif ($name=~m/^(reDate|acDate)$/)
-  {
-   $rinfo->{contact}->{$oname}->{$1}=DateTime::Format::ISO8601->new()->parse_datetime($c->getFirstChild()->getData());
-  }
- } continue { $c=$c->getNextSibling(); }
+ my $tcommand=(ref($command))? $command->[0] : $command;
+ my @ns=@{$msg->ns->{contact}};
+ $msg->command([$command,'contact:'.$tcommand,sprintf('xmlns:contact="%s" xsi:schemaLocation="%s %s"',$ns[0],$ns[0],$ns[1])]);
+
+ my @d=map { ['contact:id',$_] } @c;
+
+ if (($tcommand=~m/^(?:info|transfer)$/) && ref($contact[0]) && UNIVERSAL::isa($contact[0],'Net::DRI::Data::Contact'))
+ {
+  push(@d, build_authinfo($contact[0]));
+ }
+ 
+ return @d;
 }
+
+####################################################################################################
 
 ############ Transform commands
 
@@ -390,7 +323,7 @@ sub build_authinfo
  my $contact=shift;
  my $az=$contact->auth();
  return () unless ($az && ref($az) && exists($az->{pw}));
- return ['contact:authInfo',['contact:pw',$az->{pw}]];
+ return ['contact:authInfo',$az->{pw}, {type => 'pw'}];
 }
 
 sub build_disclose
@@ -421,28 +354,24 @@ sub build_cdata
  my $contact=shift;
  my @d;
 
- my (@postl,@posti,@addrl,@addri);
- _do_locint(\@postl,\@posti,$contact,'name');
- _do_locint(\@postl,\@posti,$contact,'org');
- _do_locint(\@addrl,\@addri,$contact,'street');
- _do_locint(\@addrl,\@addri,$contact,'city');
- _do_locint(\@addrl,\@addri,$contact,'sp');
- _do_locint(\@addrl,\@addri,$contact,'pc');
- _do_locint(\@addrl,\@addri,$contact,'cc');
- push @postl,['contact:addr',@addrl] if @addrl;
- push @posti,['contact:addr',@addri] if @addri;
-
- my $if=$contact->_intfirst();
- if (defined($if) && $if)
- {
-  push @d,['contact:postalInfo',@postl,{type=>'int'}] if @postl;
-  push @d,['contact:postalInfo',@posti,{type=>'loc'}] if @posti;
- } else
- {
-  push @d,['contact:postalInfo',@postl,{type=>'loc'}] if @postl;
-  push @d,['contact:postalInfo',@posti,{type=>'int'}] if @posti;
+ my (@post1,@post2,@addr1,@addr2);
+ _do_locint(\@post1,\@post2,$contact,'name');
+ _do_locint(\@post1,\@post2,$contact,'org');
+ _do_locint(\@addr1,\@addr2,$contact,'street');
+ _do_locint(\@addr1,\@addr2,$contact,'city');
+ _do_locint(\@addr1,\@addr2,$contact,'sp');
+ _do_locint(\@addr1,\@addr2,$contact,'pc');
+ _do_locint(\@addr1,\@addr2,$contact,'cc');
+ push @post1,['contact:addr',@addr1] if @addr1;
+ push @post2,['contact:addr',@addr2] if @addr2;
+ 
+ if (defined($contact->type()) && $contact->type() eq 'int') {
+   push @d,['contact:ascii',@post1] if @post1;
+   #push @d,['contact:postalInfo',@post2,{type=>'loc'}] if @post2;
+ } else {
+   push @d,['contact:ascii',@post1] if @post1;
+   #push @d,['contact:postalInfo',@post2,{type=>'int'}] if @post2;
  }
-
 
  push @d,build_tel('contact:voice',$contact->voice()) if defined($contact->voice());
  push @d,build_tel('contact:fax',$contact->fax()) if defined($contact->fax());
@@ -450,21 +379,22 @@ sub build_cdata
  push @d,build_authinfo($contact);
  push @d,build_disclose($contact);
  return @d;
-}
 
-sub _do_locint
-{
- my ($rl,$ri,$contact,$what)=@_;
- my @tmp=$contact->$what();
- return unless @tmp;
- if ($what eq 'street')
+
+ sub _do_locint
  {
-  if (defined($tmp[0])) { foreach (@{$tmp[0]}) { push @$rl,['contact:street',$_]; } };
-  if (defined($tmp[1])) { foreach (@{$tmp[1]}) { push @$ri,['contact:street',$_]; } };
- } else
- {
-  if (defined($tmp[0])) { push @$rl,['contact:'.$what,$tmp[0]]; }
-  if (defined($tmp[1])) { push @$ri,['contact:'.$what,$tmp[1]]; }
+  my ($rl,$ri,$contact,$what)=@_;
+  my @tmp=$contact->$what();
+  return unless @tmp;
+  if ($what eq 'street')
+  {
+   if (defined($tmp[0])) { foreach (@{$tmp[0]}) { push @$rl,['contact:street',$_]; } };
+   if (defined($tmp[1])) { foreach (@{$tmp[1]}) { push @$ri,['contact:street',$_]; } };
+  } else
+  {
+   if (defined($tmp[0])) { push @$rl,['contact:'.$what,$tmp[0]]; }
+   if (defined($tmp[1])) { push @$ri,['contact:'.$what,$tmp[1]]; }
+  }
  }
 }
 
@@ -492,7 +422,6 @@ sub create_parse
  my $c=$credata->getFirstChild();
  while ($c)
  {
-  next unless ($c->nodeType() == 1); ## only for element nodes
   my $name=$c->localname() || $c->nodeName();
   if ($name eq 'id')
   {
@@ -506,74 +435,12 @@ sub create_parse
   {
    $rinfo->{contact}->{$oname}->{$1}=DateTime::Format::ISO8601->new()->parse_datetime($c->getFirstChild()->getData());
   }
- } continue { $c=$c->getNextSibling(); }
-}
-
-sub delete
-{
- my ($epp,$contact)=@_;
- my $mes=$epp->message();
- my @d=build_command($mes,'delete',$contact);
- $mes->command_body(\@d);
-}
-
-sub transfer_request
-{
- my ($epp,$c)=@_;
- my $mes=$epp->message();
- my @d=build_command($mes,['transfer',{'op'=>'request'}],$c);
- $mes->command_body(\@d);
-}
-
-sub transfer_cancel
-{
- my ($epp,$c)=@_;
- my $mes=$epp->message();
- my @d=build_command($mes,['transfer',{'op'=>'cancel'}],$c);
- $mes->command_body(\@d);
-}
-
-sub transfer_answer
-{
- my ($epp,$c,$approve)=@_;
- my $mes=$epp->message();
- my @d=build_command($mes,['transfer',{'op'=>((defined($approve) && $approve)? 'approve' : 'reject' )}],$c);
- $mes->command_body(\@d);
-}
-
-sub update
-{
- my ($epp,$contact,$todo)=@_;
- my $mes=$epp->message();
-
- Net::DRI::Exception::usererr_invalid_parameters($todo." must be a Net::DRI::Data::Changes object") unless ($todo && ref($todo) && $todo->isa('Net::DRI::Data::Changes'));
- if ((grep { ! /^(?:add|del)$/ } $todo->types('status')) ||
-     (grep { ! /^(?:set)$/ } $todo->types('info'))
-    )
- {
-  Net::DRI::Exception->die(0,'protocol/EPP',11,'Only status add/del or info set available for contact');
+  $c=$c->getNextSibling();
  }
-
- my @d=build_command($mes,'update',$contact);
-
- my $sadd=$todo->add('status');
- my $sdel=$todo->del('status');
- push @d,['contact:add',$sadd->build_xml('contact:status')] if ($sadd);
- push @d,['contact:rem',$sdel->build_xml('contact:status')] if ($sdel);
-
- my $newc=$todo->set('info');
- if ($newc)
- {
-  Net::DRI::Exception->die(1,'protocol/EPP',10,'Invalid contact '.$newc) unless (UNIVERSAL::isa($newc,'Net::DRI::Data::Contact'));
-  $newc->validate(1); ## will trigger an Exception if needed
-  my @c=build_cdata($newc);
-  push @d,['contact:chg',@c] if @c;
- }
- $mes->command_body(\@d);
 }
 
 ####################################################################################################
-## RFC4933 §3.3 Offline Review of Requested Actions
+## RFC3733 §3.2.6  Offline Review of Requested Actions
 
 sub pandata_parse
 {
@@ -587,7 +454,6 @@ sub pandata_parse
  my $c=$pandata->firstChild();
  while ($c)
  {
-  next unless ($c->nodeType() == 1); ## only for element nodes
   my $name=$c->localname() || $c->nodeName();
   next unless $name;
 
@@ -606,8 +472,10 @@ sub pandata_parse
   {
    $rinfo->{contact}->{$oname}->{date}=DateTime::Format::ISO8601->new()->parse_datetime($c->firstChild->getData());
   }
- } continue { $c=$c->getNextSibling(); }
+  $c=$c->getNextSibling();
+ }
 }
 
 ####################################################################################################
+
 1;

@@ -69,14 +69,15 @@ See the LICENSE file that comes with this distribution for more details.
 sub login
 {
  shift if ($_[0] eq __PACKAGE__);
- my ($cm,$id,$pass,$cltrid,$dr,$newpass,$pdata)=@_;
+ my ($cm, $id, $pass, $cltrid, $dr, $newpass, $pdata) = @_;
 
- my $got=$cm->();
+ my $got = $cm->();
  $got->parse($dr);
- my $rg=$got->result_greeting();
+ my $rg = $got->result_greeting();
+ my $version = $got->version();
 
  my $mes=$cm->();
- $mes->command(['login']);
+ $mes->command([$version gt 0.4 ? 'login' : 'creds']);
  my @d;
  push @d,['clID',$id];
  push @d,['pw',$pass];
@@ -87,7 +88,15 @@ sub login
  push @s,map { ['objURI',$_] } @{$rg->{svcs}};
  push @s,['svcExtension',map {['extURI',$_]} @{$rg->{svcext}}] if (exists($rg->{svcext}) && defined($rg->{svcext}) && (ref($rg->{svcext}) eq 'ARRAY'));
  @s=$pdata->{login_service_filter}->(@s) if (defined($pdata) && ref($pdata) eq 'HASH' && exists($pdata->{login_service_filter}) && ref($pdata->{login_service_filter}) eq 'CODE');
- push @d,['svcs',@s] if @s;
+
+ if ($version gt 0.4)
+ {
+ 	push @d,['svcs',@s] if @s;
+ }
+ else
+ {
+	$mes->ver04login(['svcs', @s]);
+ }
 
  $mes->command_body(\@d);
  $mes->cltrid($cltrid) if $cltrid;
@@ -120,17 +129,34 @@ sub get_data
  shift if ($_[0] eq __PACKAGE__);
  my ($to,$sock)=@_;
 
- my $c;
- $sock->read($c,4); ## first 4 bytes are the packed length
- die(Net::DRI::Protocol::ResultStatus->new_error('COMMAND_SYNTAX_ERROR','Unable to read EPP 4 bytes length (connection closed by registry ?)','en')) unless $c;
- my $length=unpack('N',$c)-4;
- my ($m);
- while ($length > 0)
+ my $version = $to->{transport}->{protocol_version};
+ my $m;
+
+ if ($version gt 0.4)
  {
-  my $new;
-  $length-=$sock->read($new,$length);
-  $m.=$new;
+  my $c;
+  $sock->read($c,4); ## first 4 bytes are the packed length
+  die(Net::DRI::Protocol::ResultStatus->new_error('COMMAND_SYNTAX_ERROR','Unable to read EPP 4 bytes length (connection closed by registry ?)','en')) unless $c;
+  my $length=unpack('N',$c)-4;
+  while ($length > 0)
+  {
+   my $new;
+   $length-=$sock->read($new,$length);
+   $m.=$new;
+  }
  }
+ else
+ {
+  my $byte;
+
+  while ($sock->read($byte, 1))
+  {
+   $m .= $byte;
+   last if ($m =~ m!</epp>$!);
+   $byte = undef;
+  }
+ }
+
  die(Net::DRI::Protocol::ResultStatus->new_error('COMMAND_SYNTAX_ERROR',$m? $m : '<empty message from server>','en')) unless ($m=~m!</epp>$!);
 
  return Net::DRI::Data::Raw->new_from_string($m);

@@ -128,13 +128,19 @@ sub add_namestore_ext
  }
 
  ## We do not know what will happen in case of check_multi with different TLD
+ my $ext = 'dotCOM';
  if (ref($domain) eq 'ARRAY')
  {
-  $mes->command_extension($eid,['namestoreExt:subProduct',($domain->[0]=~m/\.net$/i)? 'dotNET' : 'dotCOM']);
+  $ext = 'dotNET' if ($domain->[0]=~m/\.net$/i);
+  $ext = 'dotCC' if ($domain->[0]=~m/\.cc$/i);
+  $ext = 'dotTV' if ($domain->[0]=~m/\.tv$/i);
  } else
  {
-  $mes->command_extension($eid,['namestoreExt:subProduct',($domain=~m/\.net$/i)? 'dotNET' : 'dotCOM']);
+  $ext = 'dotNET' if ($domain=~m/\.net$/i);
+  $ext = 'dotCC' if ($domain=~m/\.cc$/i);
+  $ext = 'dotTV' if ($domain=~m/\.tv$/i);
  }
+ $mes->command_extension($eid,['namestoreExt:subProduct', $ext]);
 }
 
 sub parse

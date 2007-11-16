@@ -108,8 +108,8 @@ sub create
  return unless (UNIVERSAL::isa($contact,'Net::DRI::Data::Contact::US'));
 
  my $str=sprintf('AppPurpose=%s NexusCategory=%s',$contact->application_purpose(),$contact->nexus_category());
- my $eid=$mes->command_extension_register('','');
- $mes->command_extension($eid,[$str]);
+ my $eid=$mes->command_extension_register('neulevel:extension','xmlns:neulevel="urn:ietf:params:xml:ns:neulevel-1.0" xsi:schemaLocation="urn:ietf:params:xml:ns:neulevel-1.0 neulevel-1.0.xsd"');
+ $mes->command_extension($eid,['neulevel:unspec', $str]);
 }
 
 sub update
@@ -126,8 +126,8 @@ sub update
 
  return unless @tmp;
  
- my $eid=$mes->command_extension_register('','');
- $mes->command_extension($eid,[join(' ',@tmp)]);
+ my $eid=$mes->command_extension_register('neulevel:extension','xmlns:neulevel="urn:ietf:params:xml:ns:neulevel-1.0" xsi:schemaLocation="urn:ietf:params:xml:ns:neulevel-1.0 neulevel-1.0.xsd"');
+ $mes->command_extension($eid,['neulevel:unspec', join(' ',@tmp)]);
 }
 
 ####################################################################################################

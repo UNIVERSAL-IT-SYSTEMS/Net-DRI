@@ -27,6 +27,7 @@ WriteMakefile(
 	'XML::LibXML' => 0,
 	'Net::SMTP' => 0,
 	'MIME::Entity' => 0,
+	'Test::Perl::Critic' => 0
     },
     dist                => { COMPRESS => 'gzip -9f', SUFFIX => 'gz', },
     clean               => { FILES => 'Net-DRI-*' },

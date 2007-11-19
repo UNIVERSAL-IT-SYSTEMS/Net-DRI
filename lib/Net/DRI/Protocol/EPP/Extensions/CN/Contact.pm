@@ -100,8 +100,12 @@ sub check_parse
     $rinfo->{contact}->{$contact}->{action}='check';
     if ($cd->getAttribute('x') eq '+') {
        $rinfo->{contact}->{$contact}->{exist}=1;
+       $rinfo->{contact}->{lc($contact)}->{exist}=1;
+       $rinfo->{contact}->{uc($contact)}->{exist}=1;
     } else {
        $rinfo->{contact}->{$contact}->{exist}=0;
+       $rinfo->{contact}->{lc($contact)}->{exist}=0;
+       $rinfo->{contact}->{uc($contact)}->{exist}=0;
     }
  }
 }
@@ -176,6 +180,8 @@ sub info_parse
 
  $rinfo->{contact}->{$oname}->{status}=$po->create_local_object('status')->add(@s);
  $rinfo->{contact}->{$oname}->{self}=$contact;
+ $rinfo->{contact}->{lc($oname)} = $rinfo->{contact}->{uc($oname)} =
+	$rinfo->{contact}->{$oname};
 }
 
 sub parse_tel

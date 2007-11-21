@@ -25,6 +25,8 @@ use Net::DRI::Data::Hosts;
 use Net::DRI::Data::ContactSet;
 use Net::DRI::Protocol::EPP;
 
+use IDNA::Punycode;
+
 use DateTime::Format::ISO8601;
 
 our $VERSION=do { my @r=(q$Revision: 1.13 $=~/\d+/g); sprintf("%d".".%02d" x $#r, @r); };
@@ -97,9 +99,19 @@ sub build_command
  my ($msg,$command,$domain,$domainattr)=@_;
  my @dom=(ref($domain))? @$domain : ($domain);
  Net::DRI::Exception->die(1,'protocol/EPP',2,"Domain name needed") unless @dom;
- foreach my $d (@dom)
+ for (my $i = 0; $i < scalar(@dom); $i++)
  {
+  my $d = $dom[$i];
   Net::DRI::Exception->die(1,'protocol/EPP',2,'Domain name needed') unless defined($d) && $d;
+  if ($d =~ /[^A-Za-z0-9\-]/)
+  {
+   my @domparts = split(/\./, $d);
+   foreach my $dompart (@domparts)
+   {
+    $dompart = encode_punycode($dompart) if ($dompart =~ /[^A-Za-z0-9\-]/);
+   }
+   $d = $dom[$i] = join(".", @domparts);
+  }
   Net::DRI::Exception->die(1,'protocol/EPP',10,'Invalid domain name: '.$d) unless Net::DRI::Util::is_hostname($d);
  }
 

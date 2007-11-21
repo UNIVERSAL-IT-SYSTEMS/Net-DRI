@@ -73,6 +73,7 @@ sub register_commands
  my ($class,$version)=@_;
  my %tmp=(
            create => [ \&create, undef ],
+           check =>  [ \&check, undef ]
          );
 
  return { 'domain' => \%tmp };
@@ -92,6 +93,20 @@ sub create
   Net::DRI::Exception::usererr_invalid_parameters('IDN language tag must be of type XML schema language') unless Net::DRI::Util::xml_is_language($rd->{language});
 
   my $eid=$mes->command_extension_register('idn:create','xmlns:idn="urn:iana:xml:ns:idn" xsi:schemaLocation="urn:iana:xml:ns:idn idn.xsd"');
+  $mes->command_extension($eid,['idn:script', $rd->{language}]);
+ }
+}
+
+sub check
+{
+ my ($epp,$domain,$rd)=@_;
+ my $mes=$epp->message();
+
+ if (defined($rd) && (ref($rd) eq 'HASH') && exists($rd->{language}))
+ {
+  Net::DRI::Exception::usererr_invalid_parameters('IDN language tag must be of type XML schema language') unless Net::DRI::Util::xml_is_language($rd->{language});
+
+  my $eid=$mes->command_extension_register('idn:check','xmlns:idn="urn:iana:xml:ns:idn" xsi:schemaLocation="urn:iana:xml:ns:idn idn.xsd"');
   $mes->command_extension($eid,['idn:script', $rd->{language}]);
  }
 }

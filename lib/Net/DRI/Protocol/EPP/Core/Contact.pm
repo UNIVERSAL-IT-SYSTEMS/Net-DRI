@@ -433,7 +433,11 @@ sub build_cdata
  push @posti,['contact:addr',@addri] if @addri;
 
  my $if=$contact->_intfirst();
- if (defined($if) && $if)
+ if (defined($if) && $if == 2) # int only
+ {
+  push @d,['contact:postalInfo',@postl,{type=>'int'}] if @postl;
+ }
+ elsif (defined($if) && $if)
  {
   push @d,['contact:postalInfo',@postl,{type=>'int'}] if @postl;
   push @d,['contact:postalInfo',@posti,{type=>'loc'}] if @posti;

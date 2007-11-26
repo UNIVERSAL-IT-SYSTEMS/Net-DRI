@@ -83,7 +83,7 @@ sub new
 
 sub periods  { return map { DateTime::Duration->new(years => $_) } (1..10); }
 sub name     { return 'CN'; }
-sub tlds     { return ('cn'); }
+sub tlds     { return ('cn','xn--55qx5d','xn--fiqs8s','xn--io0a7i'); }
 sub object_types { return ('domain','contact','ns'); }
 
 sub transport_protocol_compatible

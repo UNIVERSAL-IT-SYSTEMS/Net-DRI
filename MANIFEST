@@ -21,6 +21,7 @@ lib/Net/DRI/Data/Contact/ASIA.pm
 lib/Net/DRI/Data/Contact/AT.pm
 lib/Net/DRI/Data/Contact/BE.pm
 lib/Net/DRI/Data/Contact/CAT.pm
+lib/Net/DRI/Data/Contact/CN.pm
 lib/Net/DRI/Data/Contact/COOP.pm
 lib/Net/DRI/Data/Contact/EURid.pm
 lib/Net/DRI/Data/Contact/LU.pm
@@ -40,7 +41,9 @@ lib/Net/DRI/DRD/AT.pm
 lib/Net/DRI/DRD/BE.pm
 lib/Net/DRI/DRD/BIZ.pm
 lib/Net/DRI/DRD/CAT.pm
+lib/Net/DRI/DRD/CN.pm
 lib/Net/DRI/DRD/COOP.pm
+lib/Net/DRI/DRD/DENIC.pm
 lib/Net/DRI/DRD/EURid.pm
 lib/Net/DRI/DRD/Gandi.pm
 lib/Net/DRI/DRD/ICANN.pm
@@ -53,6 +56,8 @@ lib/Net/DRI/DRD/NU.pm
 lib/Net/DRI/DRD/ORG.pm
 lib/Net/DRI/DRD/PL.pm
 lib/Net/DRI/DRD/SE.pm
+lib/Net/DRI/DRD/TW.pm
+lib/Net/DRI/DRD/US.pm
 lib/Net/DRI/DRD/VNDS.pm
 lib/Net/DRI/DRD/WS.pm
 lib/Net/DRI/Exception.pm
@@ -92,6 +97,11 @@ lib/Net/DRI/Protocol/EPP/Extensions/CAT.pm
 lib/Net/DRI/Protocol/EPP/Extensions/CAT/Contact.pm
 lib/Net/DRI/Protocol/EPP/Extensions/CAT/DefensiveRegistration.pm
 lib/Net/DRI/Protocol/EPP/Extensions/CAT/Domain.pm
+lib/Net/DRI/Protocol/EPP/Extensions/CN.pm
+lib/Net/DRI/Protocol/EPP/Extensions/CN/Contact.pm
+lib/Net/DRI/Protocol/EPP/Extensions/CN/Domain.pm
+lib/Net/DRI/Protocol/EPP/Extensions/CN/Host.pm
+lib/Net/DRI/Protocol/EPP/Extensions/CN/Message.pm
 lib/Net/DRI/Protocol/EPP/Extensions/CentralNic.pm
 lib/Net/DRI/Protocol/EPP/Extensions/CentralNic/Release.pm
 lib/Net/DRI/Protocol/EPP/Extensions/CentralNic/TTL.pm
@@ -117,7 +127,11 @@ lib/Net/DRI/Protocol/EPP/Extensions/LU/Poll.pm
 lib/Net/DRI/Protocol/EPP/Extensions/LU/Status.pm
 lib/Net/DRI/Protocol/EPP/Extensions/MOBI.pm
 lib/Net/DRI/Protocol/EPP/Extensions/MOBI/Domain.pm
+lib/Net/DRI/Protocol/EPP/Extensions/NAME.pm
+lib/Net/DRI/Protocol/EPP/Extensions/NAME/EmailFwd.pm
 lib/Net/DRI/Protocol/EPP/Extensions/NSgroup.pm
+lib/Net/DRI/Protocol/EPP/Extensions/PIR.pm
+lib/Net/DRI/Protocol/EPP/Extensions/PIR/IDNLanguage.pm
 lib/Net/DRI/Protocol/EPP/Extensions/PL.pm
 lib/Net/DRI/Protocol/EPP/Extensions/PL/Contact.pm
 lib/Net/DRI/Protocol/EPP/Extensions/PL/Domain.pm

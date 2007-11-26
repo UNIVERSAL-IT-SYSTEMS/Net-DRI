@@ -81,7 +81,8 @@ sub new
 
 sub info
 {
- my ($self,$key)=@_;
+ my ($self,$reg,$key)=@_;
+ $key = $reg if (ref($reg) eq '');
  return unless defined($self->{info});
  return unless (defined($key) && exists($self->{info}->{$key}));
  return $self->{info}->{$key};

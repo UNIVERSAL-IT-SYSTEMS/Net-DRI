@@ -119,8 +119,10 @@ sub verify_name_domain
 
 sub is_my_tld
 {
-   my ($self,$domain)=@_;
+   my ($self, $reg, $domain)=@_;
    my ($tld) = uc($self->tlds());
+
+   $domain = $reg if (!defined($domain) && ref($reg) eq '');
 
    return 1 if (uc($domain) =~ /.*$tld$/);
    return 0;

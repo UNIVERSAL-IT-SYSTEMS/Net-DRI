@@ -94,8 +94,7 @@ sub dom_create
 
  if (defined($rd) && (ref($rd) eq 'HASH') && exists($rd->{url}))
  {
-  push(@ceddata, ['asia:maintainerUrl', $rd->{ced}->{url}])
-	if (exists($rd->{ced}->{url}));
+  push(@ceddata, ['asia:maintainerUrl', $rd->{url}]);
  }
 
  if (defined($cs))

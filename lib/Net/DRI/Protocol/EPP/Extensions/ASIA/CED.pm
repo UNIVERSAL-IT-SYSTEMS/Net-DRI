@@ -130,7 +130,7 @@ sub dom_parse
  return unless ($ceddata);
 
  $c = $ceddata->getElementsByTagNameNS('urn:afilias:params:xml:ns:asia-1.0',
-	'mantainerUrl');
+	'maintainerUrl');
  $rinfo->{$otype}->{$oname}->{url} = $c->shift()->getFirstChild()->getData()
 	if ($c);
 

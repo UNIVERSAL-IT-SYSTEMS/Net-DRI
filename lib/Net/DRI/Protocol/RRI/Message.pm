@@ -127,13 +127,25 @@ sub as_string
  my $ens=sprintf('xmlns="%s"', $topns->[0]);
  my @d;
  push @d,'<?xml version="1.0" encoding="UTF-8" standalone="no"?>';
- my ($type, $cmd, $ns) = @{$self->command()};
- my $attr = '';
+ my ($type, $cmd, $ns, $attr) = @{$self->command()};
+
+ $attr = '' unless (defined($attr));
+ $attr = ' ' . join(' ', map { $_ . '="' . $attr->{$_} . '"' }
+	keys (%{$attr})) if (ref($attr) eq 'HASH');
 
  if (defined($ns))
  {
-  $ens .= ' xmlns:' . $type . '="' . $ns . '"';
-  $cmd = $type . ':' . $cmd;
+  if (ref($ns) eq 'HASH')
+  {
+   $ens .= ' ' . join(' ', map { 'xmlns:' . $_ . '="' . $ns->{$_} . '"' }
+	keys(%{$ns}));
+   $cmd = $type . ':' . $cmd;
+  }
+  else
+  {
+   $ens .= ' xmlns:' . $type . '="' . $ns . '"';
+   $cmd = $type . ':' . $cmd;
+  }
  }
  else
  {

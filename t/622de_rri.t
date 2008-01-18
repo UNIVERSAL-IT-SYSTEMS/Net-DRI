@@ -5,7 +5,7 @@ use Net::DRI::Data::Raw;
 use DateTime::Duration;
 use Data::Dumper;
 
-use Test::More tests => 60;
+use Test::More tests => 63;
 
 eval { use Test::LongString max => 100; $Test::LongString::Context=50; };
 *{'main::is_string'}=\&main::is if $@;
@@ -348,6 +348,17 @@ isa_ok($rc, 'Net::DRI::Protocol::ResultStatus');
 is($rc->is_success(), 1, 'Domain transfer successfully approved');
 
 is($R1, '<?xml version="1.0" encoding="UTF-8" standalone="no"?><registry-request xmlns="http://registry.denic.de/global/1.0" xmlns:domain="http://registry.denic.de/domain/1.0"><domain:chprovAck><domain:handle>rritestdomain2.de</domain:handle><domain:ace>rritestdomain2.de</domain:ace></domain:chprovAck><ctid>ABC-12345</ctid></registry-request>', 'Accept Transfer XML correct');
+
+eval {
+	$rc = $dri->domain_delete('rritestdomain3.de', {
+		contact =>	$cs
+	});
+};
+print(STDERR $@->as_string()) if ($@);
+isa_ok($rc, 'Net::DRI::Protocol::ResultStatus');
+is($rc->is_success(), 1, 'Domain successfully deleted');
+
+is($R1, '<?xml version="1.0" encoding="UTF-8" standalone="no"?><registry-request xmlns="http://registry.denic.de/global/1.0" xmlns:domain="http://registry.denic.de/domain/1.0"><domain:delete><domain:handle>rritestdomain3.de</domain:handle><domain:ace>rritestdomain3.de</domain:ace><domain:contact role="holder">DENIC-99990-BSP</domain:contact></domain:delete><ctid>ABC-12345</ctid></registry-request>', 'Delete Domain XML correct');
 
 ####################################################################################################
 exit(0);

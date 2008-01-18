@@ -307,7 +307,7 @@ sub parse_ns
 
 sub transfer_query
 {
- my ($epp, $domain, $rd)=@_;
+ my ($epp, $domain, $rd) = @_;
  my $mes = $epp->message();
  my @d = build_command($mes, 'info', $domain,
 	{recursive => 'true', withProvider => 'false'});
@@ -384,7 +384,8 @@ sub create
  }
 
  ## Contacts, all OPTIONAL
- if (verify_rd($rd,'contact') && UNIVERSAL::isa($rd->{contact},'Net::DRI::Data::ContactSet'))
+ if (verify_rd($rd, 'contact') &&
+	UNIVERSAL::isa($rd->{contact},'Net::DRI::Data::ContactSet'))
  {
   my $cs = $rd->{contact};
   push @d,build_contact($cs);
@@ -417,24 +418,24 @@ sub build_contact
 
 sub build_ns
 {
- my ($epp,$ns,$domain,$xmlns)=@_;
+ my ($epp, $ns, $domain, $xmlns) = @_;
 
  my @d;
- my $asattr=$epp->{hostasattr};
+ my $asattr = $epp->{hostasattr};
 
  if ($asattr)
  {
   foreach my $i (1..$ns->count())
   {
-   my ($n,$r4,$r6)=$ns->get_details($i);
+   my ($n, $r4, $r6) = $ns->get_details($i);
    my @h;
-   push @h,['domain:hostName',$n];
-   if (($n=~m/\S+\.${domain}$/i) || (lc($n) eq lc($domain)) || ($asattr==2))
+   push @h, ['domain:hostName', $n];
+   if (($n=~m/\S+\.${domain}$/i) || (lc($n) eq lc($domain)) || ($asattr == 2))
    {
-    push @h,map { ['domain:hostAddr',$_,{ip=>'v4'}] } @$r4 if @$r4;
-    push @h,map { ['domain:hostAddr',$_,{ip=>'v6'}] } @$r6 if @$r6;
+    push @h, map { ['domain:hostAddr', $_, {ip =>' v4'}] } @$r4 if @$r4;
+    push @h, map { ['domain:hostAddr', $_, {ip =>' v6'}] } @$r6 if @$r6;
    }
-   push @d,['domain:hostAttr',@h];
+   push @d, ['domain:hostAttr', @h];
   }
  } else
  {
@@ -443,7 +444,7 @@ sub build_ns
 	['dnsentry:rdata', ['dnsentry:nameserver', $_ ] ] ] } $ns->get_names();
  }
 
- $xmlns='dnsentry' unless defined($xmlns);
+ $xmlns = 'dnsentry' unless defined($xmlns);
  return @d;
 }
 
@@ -482,6 +483,21 @@ sub delete
  my ($epp, $domain, $rd) = @_;
  my $mes = $epp->message();
  my @d = build_command($mes, 'delete', $domain);
+
+ ## Holder contact
+ if (verify_rd($rd, 'contact') &&
+	UNIVERSAL::isa($rd->{contact}, 'Net::DRI::Data::ContactSet'))
+ {
+  my $ocs = $rd->{contact};
+  my $cs = new Net::DRI::Data::ContactSet;
+  foreach my $c ($ocs->get('registrant'))
+  {
+   $cs->add($c, 'registrant');
+  }
+
+  push @d, build_contact($cs);
+ }
+
  $mes->command_body(\@d);
 }
 

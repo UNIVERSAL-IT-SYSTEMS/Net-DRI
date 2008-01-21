@@ -83,6 +83,24 @@ sub name     { return 'DENIC'; }
 sub tlds     { return ('de'); }
 sub object_types { return ('domain','contact','ns'); }
 
+sub domain_update
+{
+ my ($self, $reg, $dom, $changes, $rd) = @_;
+ my $cs = $reg->get_info('contact', 'domain', $dom);
+ my $ns = $reg->get_info('ns', 'domain', $dom);
+
+ $rd->{contact} = $cs;
+ $rd->{ns} = $ns;
+
+ return $reg->process('domain', 'update', [$dom, $changes, $rd]);
+}
+
+sub domain_trade
+{
+ my ($self, $reg, $dom, $rd) = @_;
+ return $reg->process('domain', 'trade', [$dom, $rd]);
+}
+
 sub transport_protocol_compatible
 {
  my ($self,$to,$po)=@_;

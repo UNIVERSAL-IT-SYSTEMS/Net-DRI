@@ -5,10 +5,10 @@ use Net::DRI::Data::Raw;
 use DateTime::Duration;
 use Data::Dumper;
 
-use Test::More tests => 63;
+use Test::More tests => 69;
 
-eval { use Test::LongString max => 100; $Test::LongString::Context=50; };
-*{'main::is_string'}=\&main::is if $@;
+eval { use Test::LongString max => 100; $Test::LongString::Context = 50; };
+*{'main::is_string'} = \&main::is if $@;
 
 our $E1='<?xml version="1.0" encoding="UTF-8" standalone="no"?><registry-response xmlns="http://registry.denic.de/global/1.0" xmlns:tr="http://registry.denic.de/transaction/1.0" xmlns:domain="http://registry.denic.de/domain/1.0" xmlns:contact="http://registry.denic.de/contact/1.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:dnsentry="http://registry.denic.de/dnsentry/1.0">';
 our $E2='</registry-response>';
@@ -359,6 +359,38 @@ isa_ok($rc, 'Net::DRI::Protocol::ResultStatus');
 is($rc->is_success(), 1, 'Domain successfully deleted');
 
 is($R1, '<?xml version="1.0" encoding="UTF-8" standalone="no"?><registry-request xmlns="http://registry.denic.de/global/1.0" xmlns:domain="http://registry.denic.de/domain/1.0"><domain:delete><domain:handle>rritestdomain3.de</domain:handle><domain:ace>rritestdomain3.de</domain:ace><domain:contact role="holder">DENIC-99990-BSP</domain:contact></domain:delete><ctid>ABC-12345</ctid></registry-request>', 'Delete Domain XML correct');
+
+$cs = $dri->local_object('contactset');
+$cs->add($dri->local_object('contact')->srid('DENIC-99990-BSP5'), 'registrant');
+
+eval {
+	$rc = $dri->domain_trade('rritestdomain2.de', {
+		contact =>	$cs
+	});
+};
+print(STDERR $@->as_string()) if ($@);
+isa_ok($rc, 'Net::DRI::Protocol::ResultStatus');
+is($rc->is_success(), 1, 'Domain successfully traded');
+
+is($R1, '<?xml version="1.0" encoding="UTF-8" standalone="no"?><registry-request xmlns="http://registry.denic.de/global/1.0" xmlns:domain="http://registry.denic.de/domain/1.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:dnsentry="http://registry.denic.de/dnsentry/1.0"><domain:chholder><domain:handle>rritestdomain2.de</domain:handle><domain:ace>rritestdomain2.de</domain:ace><domain:contact role="holder">DENIC-99990-BSP5</domain:contact></domain:chholder><ctid>ABC-12345</ctid></registry-request>', 'Trade Domain XML correct');
+
+my $changes = $dri->local_object('changes');
+$cs = $dri->local_object('contactset');
+$cs->add($dri->local_object('contact')->srid('ALFRED-RIPE'), 'tech');
+$changes->add('contact', $cs);
+$cs = $dri->local_object('contactset');
+$cs->add($dri->local_object('contact')->srid('DENIC-1000006-OPS'), 'tech');
+$changes->del('contact', $cs);
+$changes->add('ns', $dri->local_object('hosts')->add('dns1.syhosting.ch'));
+$changes->del('ns', $dri->local_object('hosts')->add('dns1.rritestdomain.de'));
+
+eval {
+	$rc = $dri->domain_update('rritestdomain.de', $changes);
+};
+print(STDERR $@->as_string()) if ($@);
+isa_ok($rc, 'Net::DRI::Protocol::ResultStatus');
+is($rc->is_success(), 1, 'Domain successfully updated');
+is($R1, '<?xml version="1.0" encoding="UTF-8" standalone="no"?><registry-request xmlns="http://registry.denic.de/global/1.0" xmlns:domain="http://registry.denic.de/domain/1.0"><domain:update><domain:handle>rritestdomain.de</domain:handle><domain:ace>rritestdomain.de</domain:ace><domain:contact role="admin-c">DENIC-1000006-SD</domain:contact><domain:contact role="holder">DENIC-1000006-1</domain:contact><domain:contact role="holder">DENIC-1000006-2</domain:contact><domain:contact role="tech-c">ALFRED-RIPE</domain:contact><dnsentry:dnsentry xsi:type="dnsentry:NS"><dnsentry:owner>rritestdomain.de</dnsentry:owner><dnsentry:rdata><dnsentry:nameserver>dns1.syhosting.ch</dnsentry:nameserver></dnsentry:rdata></dnsentry:dnsentry></domain:update><ctid>ABC-12345</ctid></registry-request>', 'Update Domain XML correct');
 
 ####################################################################################################
 exit(0);

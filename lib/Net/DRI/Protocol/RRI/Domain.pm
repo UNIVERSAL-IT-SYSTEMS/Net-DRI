@@ -87,6 +87,7 @@ sub register_commands
            transfer_request => [ \&transfer_request, undef ],
            transfer_cancel  => [ \&transfer_cancel, undef ],
            transfer_answer  => [ \&transfer_answer, undef ],
+	   trade => [ \&trade ],
            update => [ \&update ],
            review_complete => [ undef, \&pandata_parse ],
          );
@@ -150,8 +151,8 @@ sub build_period
 
 sub check
 {
- my ($epp, $domain, $rd)=@_;
- my $mes = $epp->message();
+ my ($rri, $domain, $rd)=@_;
+ my $mes = $rri->message();
  my @d = build_command($mes, 'check', $domain);
  $mes->command_body(\@d);
 }
@@ -187,8 +188,8 @@ sub verify_rd
 
 sub info
 {
- my ($epp, $domain, $rd)=@_;
- my $mes = $epp->message();
+ my ($rri, $domain, $rd)=@_;
+ my $mes = $rri->message();
  my @d = build_command($mes, 'info', $domain,
 	{recursive => 'false', withProvider => 'false'});
  $mes->command_body(\@d);
@@ -307,8 +308,8 @@ sub parse_ns
 
 sub transfer_query
 {
- my ($epp, $domain, $rd) = @_;
- my $mes = $epp->message();
+ my ($rri, $domain, $rd) = @_;
+ my $mes = $rri->message();
  my @d = build_command($mes, 'info', $domain,
 	{recursive => 'true', withProvider => 'false'});
  $mes->command_body(\@d);
@@ -366,12 +367,12 @@ sub transfer_parse
 
 sub create
 {
- my ($epp, $domain, $rd) = @_;
- my $mes = $epp->message();
+ my ($rri, $domain, $rd) = @_;
+ my $mes = $rri->message();
  my %ns = map { $_ => $mes->ns->{$_}->[0] } qw(domain dnsentry xsi);
  my @d = build_command($mes, 'create', $domain, undef, \%ns);
  
- my $def = $epp->default_parameters();
+ my $def = $rri->default_parameters();
  if ($def && (ref($def) eq 'HASH') && exists($def->{domain_create}) &&
 	(ref($def->{domain_create}) eq 'HASH'))
  {
@@ -392,7 +393,7 @@ sub create
  }
 
  ## Nameservers, OPTIONAL
- push @d,build_ns($epp,$rd->{ns},$domain) if (verify_rd($rd,'ns') && UNIVERSAL::isa($rd->{ns},'Net::DRI::Data::Hosts') && !$rd->{ns}->is_empty());
+ push @d,build_ns($rri,$rd->{ns},$domain) if (verify_rd($rd,'ns') && UNIVERSAL::isa($rd->{ns},'Net::DRI::Data::Hosts') && !$rd->{ns}->is_empty());
 
  $mes->command_body(\@d);
 }
@@ -418,10 +419,10 @@ sub build_contact
 
 sub build_ns
 {
- my ($epp, $ns, $domain, $xmlns) = @_;
+ my ($rri, $ns, $domain, $xmlns) = @_;
 
  my @d;
- my $asattr = $epp->{hostasattr};
+ my $asattr = $rri->{hostasattr};
 
  if ($asattr)
  {
@@ -480,8 +481,8 @@ sub create_parse
 
 sub delete
 {
- my ($epp, $domain, $rd) = @_;
- my $mes = $epp->message();
+ my ($rri, $domain, $rd) = @_;
+ my $mes = $rri->message();
  my @d = build_command($mes, 'delete', $domain);
 
  ## Holder contact
@@ -508,8 +509,8 @@ sub renew
 
 sub transfer_request
 {
- my ($epp, $domain, $rd) = @_;
- my $mes = $epp->message();
+ my ($rri, $domain, $rd) = @_;
+ my $mes = $rri->message();
  my %ns = map { $_ => $mes->ns->{$_}->[0] } qw(domain dnsentry xsi);
  my @d = build_command($mes, 'chprov', $domain, undef, \%ns);
 
@@ -522,7 +523,7 @@ sub transfer_request
  }
 
  ## Nameservers, OPTIONAL
- push @d, build_ns($epp, $rd->{ns}, $domain)
+ push @d, build_ns($rri, $rd->{ns}, $domain)
 	if (verify_rd($rd, 'ns') && UNIVERSAL::isa($rd->{ns},
 		'Net::DRI::Data::Hosts') && !$rd->{ns}->is_empty());
 
@@ -531,9 +532,9 @@ sub transfer_request
 
 sub transfer_answer
 {
- my ($epp, $domain, $rd) = @_;
- my $mes = $epp->message();
- my @d = build_command($mes, (verify_rd($rd,'approve') && $rd->{approve}) ?
+ my ($rri, $domain, $rd) = @_;
+ my $mes = $rri->message();
+ my @d = build_command($mes, (verify_rd($rd, 'approve') && $rd->{approve}) ?
 	'chprovAck' : 'chprovNack', $domain);
  $mes->command_body(\@d);
 }
@@ -543,50 +544,103 @@ sub transfer_cancel
  Net::DRI::Exception->die(0, 'RRI', 4, 'No domain transfer cancel available in RRI');
 }
 
+sub trade
+{
+ my ($rri, $domain, $rd) = @_;
+ my $mes = $rri->message();
+ my %ns = map { $_ => $mes->ns->{$_}->[0] } qw(domain dnsentry xsi);
+ my @d = build_command($mes, 'chholder', $domain, undef, \%ns);
+ 
+ my $def = $rri->default_parameters();
+ if ($def && (ref($def) eq 'HASH') && exists($def->{domain_create}) &&
+	(ref($def->{domain_create}) eq 'HASH'))
+ {
+  $rd = {} unless ($rd && (ref($rd) eq 'HASH') && keys(%$rd));
+  while (my ($k, $v) = each(%{$def->{domain_create}}))
+  {
+   next if exists($rd->{$k});
+   $rd->{$k} = $v;
+  }
+ }
+
+ ## Contacts, all OPTIONAL
+ if (verify_rd($rd, 'contact') &&
+	UNIVERSAL::isa($rd->{contact}, 'Net::DRI::Data::ContactSet'))
+ {
+  my $cs = $rd->{contact};
+  push @d, build_contact($cs);
+ }
+
+ ## Nameservers, OPTIONAL
+ push @d, build_ns($rri, $rd->{ns}, $domain) if (verify_rd($rd, 'ns') &&
+	UNIVERSAL::isa($rd->{ns}, 'Net::DRI::Data::Hosts') &&
+	!$rd->{ns}->is_empty());
+
+ $mes->command_body(\@d);
+}
+
 # FIXME: Implement this!
 sub update
 {
- my ($epp, $domain, $todo)=@_;
- my $mes = $epp->message();
-
- Net::DRI::Exception->die(0, 'RRI', 4, 'Domain update not implemented yet in RRI');
+ my ($rri, $domain, $todo, $rd) = @_;
+ my $mes = $rri->message();
+ my $ns = $rd->{ns};
+ my $cs = $rd->{contact};
 
  Net::DRI::Exception::usererr_invalid_parameters($todo." must be a Net::DRI::Data::Changes object") unless ($todo && UNIVERSAL::isa($todo,'Net::DRI::Data::Changes'));
 
+ Net::DRI::Exception::usererr_invalid_parameters("Must specify contact set and name servers with update command (or use the proper API)") unless ($cs && $ns && UNIVERSAL::isa($cs, 'Net::DRI::Data::ContactSet') && UNIVERSAL::isa($ns, 'Net::DRI::Data::Hosts'));
+
  if ((grep { ! /^(?:add|del)$/ } $todo->types('ns')) ||
-     (grep { ! /^(?:add|del)$/ } $todo->types('status')) ||
-     (grep { ! /^(?:add|del)$/ } $todo->types('contact')) ||
-     (grep { ! /^set$/ } $todo->types('registrant')) ||
-     (grep { ! /^set$/ } $todo->types('auth'))
-    )
+     (grep { ! /^(?:add|del)$/ } $todo->types('contact')))
  {
-  Net::DRI::Exception->die(0,'protocol/EPP',11,'Only ns/status/contact add/del or registrant/authinfo set available for domain');
+  Net::DRI::Exception->die(0, 'protocol/EPP', 11, 'Only ns/status/contact add/del or registrant/authinfo set available for domain');
  }
 
- my @d=build_command($mes,'update',$domain);
+ my @d = build_command($mes, 'update', $domain);
 
- my $nsadd=$todo->add('ns');
- my $nsdel=$todo->del('ns');
- my $sadd=$todo->add('status');
- my $sdel=$todo->del('status');
- my $cadd=$todo->add('contact');
- my $cdel=$todo->del('contact');
- my (@add,@del);
+ my $nsadd = $todo->add('ns');
+ my $nsdel = $todo->del('ns');
+ my $cadd = $todo->add('contact');
+ my $cdel = $todo->del('contact');
 
- push @add,build_ns($epp,$nsadd,$domain)            if $nsadd && !$nsadd->is_empty();
- push @add,build_contact_noregistrant($cadd)        if $cadd;
- push @add,$sadd->build_xml('domain:status','core') if $sadd;
- push @del,build_ns($epp,$nsdel,$domain)            if $nsdel && !$nsdel->is_empty();
- push @del,build_contact_noregistrant($cdel)        if $cdel;
- push @del,$sdel->build_xml('domain:status','core') if $sdel;
+ if (defined($nsadd)) { foreach my $hostname ($nsadd->get_names())
+ {
+   $ns->add($nsadd->get_details($hostname));
+ } }
 
- push @d,['domain:add',@add] if @add;
- push @d,['domain:rem',@del] if @del;
+ if (defined($nsdel))
+ {
+  my $newns = new Net::DRI::Data::Hosts;
 
- my $chg=$todo->set('registrant');
- my @chg;
- push @chg,['domain:registrant',$chg->srid()] if ($chg && ref($chg) && UNIVERSAL::can($chg,'srid'));
- push @d,['domain:chg',@chg] if @chg;
+  foreach my $hostname ($ns->get_names())
+  {
+   if (!grep { $_ eq $hostname } $nsdel->get_names())
+   {
+    $newns->add($hostname);
+   }
+  }
+
+  $ns = $newns;
+ }
+
+ if (defined($cadd)) { foreach my $type ($cadd->types()) {
+  foreach my $c ($cadd->get($type))
+  {
+   $cs->add($c, $type);
+  }
+ } }
+
+ if (defined($cdel)) { foreach my $type ($cdel->types()) {
+  foreach my $c ($cdel->get($type))
+  {
+   $cs->del($c, $type);
+  }
+ } }
+
+ push(@d, build_contact($cs));
+ push(@d, build_ns($rri, $ns, $domain));
+
  $mes->command_body(\@d);
 }
 

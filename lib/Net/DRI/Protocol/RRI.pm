@@ -94,6 +94,7 @@ sub new
 		contact	=> ['http://registry.denic.de/contact/1.0'],
 		domain	=> ['http://registry.denic.de/domain/1.0'],
 		dnsentry=> ['http://registry.denic.de/dnsentry/1.0'],
+		msg	=> ['http://registry.denic.de/msg/1.0'],
 		xsi	=> ['http://www.w3.org/2001/XMLSchema-instance'],
  };
 
@@ -113,8 +114,7 @@ sub _load
 {
  my ($self, $extrah)=@_;
 
- # my @core=('Session','RegistryMessage','Domain','Contact');
- my @core = ('Session', 'Domain', 'Contact');
+ my @core=('Session','RegistryMessage','Domain','Contact');
  # push @core,'Host' unless $self->{hostasattr};
  my @class = map { 'Net::DRI::Protocol::RRI::' . $_ } @core;
 

@@ -5,7 +5,7 @@ use Net::DRI::Data::Raw;
 use DateTime::Duration;
 use Data::Dumper;
 
-use Test::More tests => 69;
+use Test::More tests => 80;
 
 eval { use Test::LongString max => 100; $Test::LongString::Context = 50; };
 *{'main::is_string'} = \&main::is if $@;
@@ -391,6 +391,38 @@ print(STDERR $@->as_string()) if ($@);
 isa_ok($rc, 'Net::DRI::Protocol::ResultStatus');
 is($rc->is_success(), 1, 'Domain successfully updated');
 is($R1, '<?xml version="1.0" encoding="UTF-8" standalone="no"?><registry-request xmlns="http://registry.denic.de/global/1.0" xmlns:domain="http://registry.denic.de/domain/1.0"><domain:update><domain:handle>rritestdomain.de</domain:handle><domain:ace>rritestdomain.de</domain:ace><domain:contact role="admin-c">DENIC-1000006-SD</domain:contact><domain:contact role="holder">DENIC-1000006-1</domain:contact><domain:contact role="holder">DENIC-1000006-2</domain:contact><domain:contact role="tech-c">ALFRED-RIPE</domain:contact><dnsentry:dnsentry xsi:type="dnsentry:NS"><dnsentry:owner>rritestdomain.de</dnsentry:owner><dnsentry:rdata><dnsentry:nameserver>dns1.syhosting.ch</dnsentry:nameserver></dnsentry:rdata></dnsentry:dnsentry></domain:update><ctid>ABC-12345</ctid></registry-request>', 'Update Domain XML correct');
+
+####################################################################################################
+
+$R2 = $E1 . '<tr:transaction><tr:stid>' . $TRID .
+	'</tr:stid><tr:result>success</tr:result><tr:data><msg:message xmlns:msg="http://registry.denic.de/msg/1.0" msgid="423" msgcnt="42" msgtime="2007-12-27T14:52:13+02:00"><msg:chprovStart><msg:domain><msg:handle>blafasel.de</msg:handle><msg:ace>blafasel.de</msg:ace></msg:domain><msg:new>DENIC eG</msg:new><msg:old>RoedelDoedelCorp</msg:old><msg:start>2007-12-27T14:52:13+02:00</msg:start><msg:reminder>2007-12-31T14:52:13+02:00</msg:reminder><msg:end>2008-01-02T14:52:13+02:00</msg:end></msg:chprovStart></msg:message></tr:data></tr:transaction>' . $E2;
+
+eval {
+	$rc = $dri->message_retrieve();
+};
+print(STDERR $@->as_string()) if ($@);
+isa_ok($rc, 'Net::DRI::Protocol::ResultStatus');
+is($rc->is_success(), 1, 'Message successfully deleted');
+my $msgid = $dri->get_info('last_id', 'message', 'session');
+is($msgid, 423, 'Message ID parsed successfully');
+is($dri->get_info('id', 'message', $msgid), $msgid, 'Message ID correct');
+is($dri->get_info('action', 'message', $msgid), 'chprov', 'Message type correct');
+is($dri->get_info('objid', 'message', $msgid), 'blafasel.de', 'Message domain correct');
+$mod = $dri->get_info('qdate', 'message', $msgid);
+is($mod->ymd . 'T' . $mod->hms, '2007-12-27T14:52:13', 'Update Date');
+
+is($R1, '<?xml version="1.0" encoding="UTF-8" standalone="no"?><registry-request xmlns="http://registry.denic.de/global/1.0" xmlns:msg="http://registry.denic.de/msg/1.0"><msg:queue-read/><ctid>ABC-12345</ctid></registry-request>', 'Retrieve Message XML correct');
+
+$R2 = $E1 . '<tr:transaction><tr:stid>' . $TRID .
+	'</tr:stid><tr:result>success</tr:result></tr:transaction>' . $E2;
+
+eval {
+	$rc = $dri->message_delete($msgid);
+};
+print(STDERR $@->as_string()) if ($@);
+isa_ok($rc, 'Net::DRI::Protocol::ResultStatus');
+is($rc->is_success(), 1, 'Message successfully deleted');
+is($R1, '<?xml version="1.0" encoding="UTF-8" standalone="no"?><registry-request xmlns="http://registry.denic.de/global/1.0" xmlns:msg="http://registry.denic.de/msg/1.0"><msg:delete msgid="423"/><ctid>ABC-12345</ctid></registry-request>', 'Delete Message XML correct');
 
 ####################################################################################################
 exit(0);

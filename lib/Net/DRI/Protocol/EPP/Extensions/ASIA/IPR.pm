@@ -113,8 +113,6 @@ sub create
 	if (exists($rd->{ipr}->{type}));
   push(@iprdata, ['ipr:preVerified', $rd->{ipr}->{preVerified}])
 	if (exists($rd->{ipr}->{preVerified}));
-  push(@iprdata, ['ipr:phase', $rd->{ipr}->{phase}])
-	if (exists($rd->{ipr}->{phase}));
 
   my $eid=$mes->command_extension_register('ipr:create','xmlns:ipr="urn:afilias:params:xml:ns:ipr-1.0" xsi:schemaLocation="urn:afilias:params:xml:ns:ipr-1.0 ipr-1.0.xsd"');
   $mes->command_extension($eid,[@iprdata]);
@@ -164,8 +162,8 @@ sub parse
  $ipr->{form} = $c->shift()->getFirstChild()->getData() if ($c);
  $c = $infdata->getElementsByTagNameNS('urn:afilias:params:xml:ns:ipr-1.0', 'preVerified');
  $ipr->{preVerified} = $c->shift()->getFirstChild()->getData() if ($c);
- $c = $infdata->getElementsByTagNameNS('urn:afilias:params:xml:ns:ipr-1.0', 'phase');
- $ipr->{phase} = $c->shift()->getFirstChild()->getData() if ($c);
+ $c = $infdata->getElementsByTagNameNS('urn:afilias:params:xml:ns:ipr-1.0', 'type');
+ $ipr->{type} = $c->shift()->getFirstChild()->getData() if ($c);
  $rinfo->{$otype}->{$oname}->{ipr} = $ipr;
 }
 

@@ -17,22 +17,33 @@ our $TRID='<tr:ctid>ABC-12345</tr:ctid><tr:stid>54322-XYZ</tr:stid>';
 our $R1;
 sub mysend
 {
- my ($transport,$count,$msg)=@_;
- $R1=$msg->as_string();
- return 1;
+	my ($transport, $count, $msg) = @_;
+	$R1 = $msg->as_string();
+	return 1;
 }
 
 our $R2;
 sub myrecv
 {
- return Net::DRI::Data::Raw->new_from_string($R2? $R2 : $E1.'<registry-response>'.r().$TRID.'</registry-response>'.$E2);
+	return Net::DRI::Data::Raw->new_from_string($R2 ? $R2 : $E1 .
+		'<registry-response>' . r() . $TRID . '</registry-response>' .
+		$E2);
 }
 
-my $dri=Net::DRI->new(10);
-$dri->{trid_factory}=sub { return 'ABC-12345'; };
+my $dri;
+eval {
+	$dri = Net::DRI->new(10);
+};
+print $@->as_string() if $@;
+$dri->{trid_factory} = sub { return 'ABC-12345'; };
 $dri->add_registry('DENIC');
 eval {
-$dri->target('DENIC')->new_current_profile('p1','Net::DRI::Transport::Dummy',[{f_send=>\&mysend,f_recv=>\&myrecv}],'Net::DRI::Protocol::RRI',[]);
+	$dri->target('DENIC')->new_current_profile('p1',
+		'Net::DRI::Transport::Dummy',
+		[{
+			f_send=> \&mysend,
+			f_recv=> \&myrecv
+		}], 'Net::DRI::Protocol::RRI', []);
 };
 print $@->as_string() if $@;
 
@@ -48,7 +59,7 @@ $R2 = $E1 . '<tr:transaction><tr:stid>' . $TRID .
 	'</tr:stid><tr:result>success</tr:result></tr:transaction>' . $E2;
 
 eval {
-	$rc = $dri->process('session', 'login', ['user','password']);
+	$rc = $dri->process('session', 'login', ['user', 'password']);
 };
 print($@->as_string()) if ($@);
 isa_ok($rc, 'Net::DRI::Protocol::ResultStatus');

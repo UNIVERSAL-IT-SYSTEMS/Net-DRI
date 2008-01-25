@@ -121,13 +121,16 @@ sub result_status
 
 sub as_string
 {
- my ($self,$to)=@_;
- my $rns=$self->ns();
- my $topns=$rns->{_main};
- my $ens=sprintf('xmlns="%s"', $topns->[0]);
+ my ($self, $to) = @_;
+ my $rns = $self->ns();
+ my $topns = $rns->{_main};
+ my $ens = sprintf('xmlns="%s"', $topns->[0]);
+ my $cmdi = $self->command();
  my @d;
- push @d,'<?xml version="1.0" encoding="UTF-8" standalone="no"?>';
- my ($type, $cmd, $ns, $attr) = @{$self->command()};
+ push @d, '<?xml version="1.0" encoding="UTF-8" standalone="no"?>';
+
+ my ($type, $cmd, $ns, $attr);
+ ($type, $cmd, $ns, $attr) = @{$cmdi} if (ref($cmdi) eq 'ARRAY');
 
  $attr = '' unless (defined($attr));
  $attr = ' ' . join(' ', map { $_ . '="' . $attr->{$_} . '"' }
@@ -152,9 +155,10 @@ sub as_string
   $cmd = $type;
   $type = undef;
  }
+
  push @d,'<registry-request '.$ens.'>';
 
- my $body=$self->command_body();
+ my $body = $self->command_body();
  if (defined($body) && $body)
  {
   push @d,'<'.$cmd.$attr.'>';
@@ -166,16 +170,15 @@ sub as_string
  }
  
  ## OPTIONAL clTRID
- my $cltrid=$self->cltrid();
+ my $cltrid = $self->cltrid();
  push @d,'<ctid>'.$cltrid.'</ctid>'
 	if (defined($cltrid) && $cltrid &&
-		Net::DRI::Util::xml_is_token($cltrid,3,64));
+		Net::DRI::Util::xml_is_token($cltrid, 3, 64));
  push @d,'</registry-request>';
 
- my $m=Encode::encode('utf8',join('',@d));
- my $l=pack('N',4+length($m)); ## RFC 4934 §4
- return (defined($to) && ($to eq 'tcp') && ($self->version() gt '0.4'))?
-	$l.$m : $m;
+ my $m = Encode::encode('utf8', join('', @d));
+ my $l = pack('N', length($m)); ## DENIC-11
+ return (defined($to) && ($to eq 'tcp') ? $l . $m : $m);
 }
 
 sub _toxml

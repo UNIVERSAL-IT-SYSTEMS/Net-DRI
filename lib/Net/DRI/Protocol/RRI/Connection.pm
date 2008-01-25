@@ -70,14 +70,15 @@ sub login
 {
  shift if ($_[0] eq __PACKAGE__);
  my ($cm, $id, $pass, $cltrid, $dr, $newpass, $pdata) = @_;
-
- my $mes=$cm->();
- $mes->command('login');
+ my $mes = $cm->();
  my @d;
+
+ $mes->command(['login']);
  push @d,['user',$id];
  push @d,['password',$pass];
  $mes->command_body(\@d);
  $mes->cltrid($cltrid) if $cltrid;
+
  return $mes->as_string('tcp');
 }
 
@@ -105,40 +106,28 @@ sub keepalive
 sub get_data
 {
  shift if ($_[0] eq __PACKAGE__);
- my ($to,$sock)=@_;
+ my ($to, $sock) = @_;
 
  my $version = $to->{transport}->{protocol_version};
  my $m;
  my $c;
- $sock->read($c,4); ## first 4 bytes are the packed length
- die(Net::DRI::Protocol::ResultStatus->new_error('COMMAND_SYNTAX_ERROR','Unable to read EPP 4 bytes length (connection closed by registry ?)','en')) unless $c;
- my $length=unpack('N',$c)-4;
+ $sock->read($c, 4); ## first 4 bytes are the packed length
+ die(Net::DRI::Protocol::ResultStatus->new_error('COMMAND_SYNTAX_ERROR',
+	'Unable to read RRI 4 bytes length (connection closed by registry ?)',
+	'en')) unless $c;
+ my $length = unpack('N', $c);
  while ($length > 0)
  {
   my $new;
-  $length-=$sock->read($new,$length);
-  $m.=$new;
+  $length -= $sock->read($new, $length);
+  $m .= $new;
  }
 
- die(Net::DRI::Protocol::ResultStatus->new_error('COMMAND_SYNTAX_ERROR',$m? $m : '<empty message from server>','en')) unless ($m=~m!</registry-response>$!);
+ die(Net::DRI::Protocol::ResultStatus->new_error('COMMAND_SYNTAX_ERROR',
+	$m ? $m : '<empty message from server>', 'en'))
+	unless ($m =~ m!</registry-response>$!);
 
  return Net::DRI::Data::Raw->new_from_string($m);
-}
-
-sub parse_greeting
-{
- shift if ($_[0] eq __PACKAGE__);
- my $dc = shift;
- my ($result) = find_result($dc);
- unless (defined($result) && ($result eq 'success'))
- {
-  return Net::DRI::Protocol::ResultStatus->new_error('COMMAND_SYNTAX_ERROR',
-	'No greeting node', 'en');
- } else
- {
-  return Net::DRI::Protocol::ResultStatus->new_success('COMMAND_SUCCESSFUL',
-	'Greeting OK', 'en');
- }
 }
 
 ## Since <hello /> is used as keepalive, answer is a <greeting>
@@ -147,17 +136,11 @@ sub parse_keepalive
  return shift->parse_greeting(@_);
 }
 
-sub parse_greeting
-{
-  return Net::DRI::Protocol::ResultStatus->new_error('COMMAND_SUCCESSFUL',
-	'Greeting OK', 'en');
-}
-
 sub parse_login
 {
  shift if ($_[0] eq __PACKAGE__);
- my $dc=shift;
- my ($result)=find_result($dc);
+ my $dc = shift;
+ my ($result) = find_result($dc);
  unless (defined($result) && ($result eq 'success'))
  {
   return Net::DRI::Protocol::ResultStatus->new_error('COMMAND_SYNTAX_ERROR',
@@ -172,8 +155,9 @@ sub parse_login
 sub parse_logout
 {
  shift if ($_[0] eq __PACKAGE__);
- my $dc=shift;
- my ($result)=find_result($dc);
+ my $dc = shift;
+ my ($result) = find_result($dc);
+
  unless (defined($result) && ($result eq 'success'))
  {
   return Net::DRI::Protocol::ResultStatus->new_error('COMMAND_SYNTAX_ERROR',
@@ -187,12 +171,12 @@ sub parse_logout
 
 sub find_result
 {
- my $dc=shift;
- my $a=$dc->as_string();
- return () unless ($a=~m!</registry-response>!);
- $a=~s/>[\n\s\t]+/>/g;
+ my $dc = shift;
+ my $a = $dc->as_string();
+ return () unless ($a =~ m!</registry-response>!);
+ $a =~ s/>[\n\s\t]+/>/g;
  my ($result);
- return () unless (($result)=($a=~m!<tr:result>(\w+)</tr:result>!));
+ return () unless (($result) = ($a =~ m!<tr:result>(\w+)</tr:result>!));
  return ($result);
 }
 

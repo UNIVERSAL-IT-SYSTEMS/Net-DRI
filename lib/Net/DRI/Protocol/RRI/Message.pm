@@ -257,7 +257,7 @@ sub parse
 		unless ($root->getName() eq 'registry-response');
 
  my @trtags = $root->getElementsByTagNameNS($trNS, 'transaction');
- Net::DRI::Exception->die(0, 'protocol/EPP', 1,
+ Net::DRI::Exception->die(0, 'protocol/RRI', 1,
 	'Unsuccessfull parse, no transaction block') unless (@trtags);
  my $res = $trtags[0];
 

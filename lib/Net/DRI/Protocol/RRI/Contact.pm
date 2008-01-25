@@ -439,7 +439,7 @@ sub create
  my $mes=$epp->message();
  my @d=build_command($mes,'create',$contact);
  
- Net::DRI::Exception->die(1,'protocol/EPP',10,'Invalid contact '.$contact) unless (UNIVERSAL::isa($contact,'Net::DRI::Data::Contact'));
+ Net::DRI::Exception->die(1,'protocol/RRI',10,'Invalid contact '.$contact) unless (UNIVERSAL::isa($contact,'Net::DRI::Data::Contact'));
  $contact->validate(); ## will trigger an Exception if needed
  push @d,build_cdata($contact);
  $mes->command_body(\@d);
@@ -516,7 +516,7 @@ sub update
      (grep { ! /^(?:set)$/ } $todo->types('info'))
     )
  {
-  Net::DRI::Exception->die(0,'protocol/EPP',11,'Only status add/del or info set available for contact');
+  Net::DRI::Exception->die(0,'protocol/RRI',11,'Only status add/del or info set available for contact');
  }
 
  my @d=build_command($mes,'update',$contact);
@@ -524,7 +524,7 @@ sub update
  my $newc=$todo->set('info');
  if ($newc)
  {
-  Net::DRI::Exception->die(1,'protocol/EPP',10,'Invalid contact '.$newc) unless (UNIVERSAL::isa($newc,'Net::DRI::Data::Contact'));
+  Net::DRI::Exception->die(1,'protocol/RRI',10,'Invalid contact '.$newc) unless (UNIVERSAL::isa($newc,'Net::DRI::Data::Contact'));
   $newc->validate(1); ## will trigger an Exception if needed
   push(@d,build_cdata($newc));
  }

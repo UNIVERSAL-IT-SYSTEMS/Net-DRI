@@ -174,49 +174,6 @@ sub parse_poll
  $rinfo->{message}->{$msgid} = $rd;
 
  return;
-
- if ($mes->errcode() == 1301 && (defined($mes->node_resdata()) || defined($mes->node_extension()) || defined($mes->node_msg()))) ## there was really a message with some content
- {
-  my ($totype,$toaction,$toname); ## $toaction will remain undef, but could be $haction if only one
-  my %info;
-  my $h=$po->commands();
- 
-  while (my ($htype,$hv)=each(%$h))
-  {
-   while (my ($haction,$hv2)=each(%$hv))
-   {
-    next if (($htype eq 'message') && ($haction eq 'retrieve')); ## calling myself here would be a very bad idea !
-    foreach my $t (@$hv2)
-    {
-     my $pf=$t->[1];
-     next unless (defined($pf) && (ref($pf) eq 'CODE'));
-     $pf->($po,$totype,$toaction,$toname,\%info);
-     next unless keys(%info);
-     next if defined($toname);
-     Net::DRI::Exception::err_assert('EPP::parse_poll can not handle multiple types !') unless (keys(%info)==1);
-     $totype=(keys(%info))[0];
-     Net::DRI::Exception::err_assert('EPP::parse_poll can not handle multiple names !') unless (keys(%{$info{$totype}})==1); ## this may happen for check_multi !
-     $toname=(keys(%{$info{$totype}}))[0];
-     $info{$totype}->{$toname}->{name}=$toname;
-    }
-   }
-  }
-  Net::DRI::Exception::err_assert('EPP::parse_poll was not able to parse anything, please report !') unless $toname;
-
-  ## Copy %info into $rd someway
-  $rd->{object_type}=$totype;
-  $rd->{object_id}=$toname; ## this has to be taken broadly, it is in fact a name for domains and hosts
-  while(my ($k,$v)=each(%{$info{$totype}->{$toname}}))
-  {
-   $rd->{$k}=$v;
-  }
- }
-
- ## TODO : optionnally, offer to merge this new information with already existing cache information
- ## in order to be able to do:
- ## $dri->get_info('clID')
- ## instead of currently:
- ## $dri->get_info('clID','message',$id)
 }
 
 ####################################################################################################

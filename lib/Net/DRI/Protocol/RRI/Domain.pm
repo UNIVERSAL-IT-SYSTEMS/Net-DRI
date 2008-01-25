@@ -100,13 +100,13 @@ sub build_command
 {
  my ($msg, $command, $domain, $domainattr, $dns) = @_;
  my @dom = (ref($domain))? @$domain : ($domain);
- Net::DRI::Exception->die(1,'protocol/EPP', 2, "Domain name needed")
+ Net::DRI::Exception->die(1,'protocol/RRI', 2, "Domain name needed")
 	unless @dom;
  foreach my $d (@dom)
  {
-  Net::DRI::Exception->die(1, 'protocol/EPP', 2, 'Domain name needed')
+  Net::DRI::Exception->die(1, 'protocol/RRI', 2, 'Domain name needed')
 	unless defined($d) && $d;
-  Net::DRI::Exception->die(1, 'protocol/EPP', 10, 'Invalid domain name: ' . $d)
+  Net::DRI::Exception->die(1, 'protocol/RRI', 10, 'Invalid domain name: ' . $d)
 	unless Net::DRI::Util::is_hostname($d);
  }
 
@@ -594,7 +594,7 @@ sub update
  if ((grep { ! /^(?:add|del)$/ } $todo->types('ns')) ||
      (grep { ! /^(?:add|del)$/ } $todo->types('contact')))
  {
-  Net::DRI::Exception->die(0, 'protocol/EPP', 11, 'Only ns/status/contact add/del or registrant/authinfo set available for domain');
+  Net::DRI::Exception->die(0, 'protocol/RRI', 11, 'Only ns/status/contact add/del or registrant/authinfo set available for domain');
  }
 
  my @d = build_command($mes, 'update', $domain);

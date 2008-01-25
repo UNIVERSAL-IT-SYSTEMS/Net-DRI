@@ -72,7 +72,7 @@ sub register_commands
 {
  my ($class,$version)=@_;
  my %tmp=(
-           create =>		[ \&create, undef ],
+           create =>		[ \&create, \&create_parse ],
 	   info =>		[ undef, \&parse ]
          );
 
@@ -119,6 +119,21 @@ sub create
   my $eid=$mes->command_extension_register('ipr:create','xmlns:ipr="urn:afilias:params:xml:ns:ipr-1.0" xsi:schemaLocation="urn:afilias:params:xml:ns:ipr-1.0 ipr-1.0.xsd"');
   $mes->command_extension($eid,[@iprdata]);
  }
+}
+
+sub create_parse
+{
+ my ($po, $otype, $oaction, $oname, $rinfo) = @_;
+ my $NS = 'urn:afilias:params:xml:ns:asia-1.0';
+ my $mes = $po->message();
+ my $infdata = $mes->get_content('creData', $NS, 1);
+ my $c;
+
+ return unless ($infdata);
+
+ $c = $infdata->getElementsByTagNameNS($NS, 'domainRoid');
+ $rinfo->{$otype}->{$oname}->{roid} = $c->shift()->getFirstChild()->getData()
+	if ($c);
 }
 
 sub parse

@@ -107,8 +107,15 @@ sub domain_update
  my $cs = $reg->get_info('contact', 'domain', $dom);
  my $ns = $reg->get_info('ns', 'domain', $dom);
 
- $rd->{contact} = $cs;
- $rd->{ns} = $ns;
+ if (!defined($cs) || !defined($ns))
+ {
+  my $res = $reg->process('domain', 'info', [$dom]);
+  $cs = $reg->get_info('contact', 'domain', $dom) if ($res->is_success());
+  $ns = $reg->get_info('ns', 'domain', $dom) if ($res->is_success());
+ }
+
+ $rd->{contact} = $cs unless (defined($rd->{contact}));
+ $rd->{ns} = $ns unless (defined($rd->{ns}));
 
  return $self->SUPER::domain_update($reg, $dom, $changes, $rd);
 }

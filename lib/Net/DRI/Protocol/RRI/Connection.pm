@@ -77,7 +77,6 @@ sub login
  push @d,['user',$id];
  push @d,['password',$pass];
  $mes->command_body(\@d);
- $mes->cltrid($cltrid) if $cltrid;
 
  return $mes->as_string('tcp');
 }
@@ -140,14 +139,14 @@ sub parse_login
 {
  shift if ($_[0] eq __PACKAGE__);
  my $dc = shift;
- my ($result) = find_result($dc);
+ my ($result, $code, $msg) = find_result($dc);
  unless (defined($result) && ($result eq 'success'))
  {
   return Net::DRI::Protocol::ResultStatus->new_error('COMMAND_SYNTAX_ERROR',
-	'Login failed', 'en');
+	(defined($msg) && length($msg) ? $msg : 'Login failed'), 'en');
  } else
  {
-  return Net::DRI::Protocol::ResultStatus->new_error('COMMAND_SUCCESSFUL',
+  return Net::DRI::Protocol::ResultStatus->new_success('COMMAND_SUCCESSFUL',
 	'Login OK', 'en');
  }
 }
@@ -175,9 +174,11 @@ sub find_result
  my $a = $dc->as_string();
  return () unless ($a =~ m!</registry-response>!);
  $a =~ s/>[\n\s\t]+/>/g;
- my ($result);
+ my ($result, $code, $msg);
  return () unless (($result) = ($a =~ m!<tr:result>(\w+)</tr:result>!));
- return ($result);
+ ($code) = ($a =~ m!<tr:message.*code="(\d+)">!);
+ ($msg) = ($a =~ m!<tr:text>([^>]+)</tr:text>!);
+ return ($result, $code, $msg);
 }
 
 ###################################################################################################################:

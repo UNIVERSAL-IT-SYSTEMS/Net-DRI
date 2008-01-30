@@ -72,7 +72,7 @@ sub new
  my $class=ref($proto) || $proto;
 
  my $self=$class->SUPER::new(@_);
- $self->{info}->{host_as_attr}=0;
+ $self->{info}->{host_as_attr}=1;
 
  bless($self,$class);
  return $self;
@@ -83,6 +83,24 @@ sub name     { return 'DENIC'; }
 sub tlds     { return ('de'); }
 sub object_types { return ('domain','contact','ns'); }
 
+sub contact_update
+{
+ my ($self, $reg, $c, $changes, $rd) = @_;
+ my $oc = $reg->get_info('self', 'contact', $c->srid());
+
+ if (!defined($oc))
+ {
+  my $res = $reg->process('contact', 'info',
+	[$reg->local_object('contact')->srid($c->srid())]);
+  $oc = $reg->get_info('self', 'contact', $c->srid())
+	if ($res->is_success());
+ }
+
+ $c->type($oc->type()) if (defined($oc));
+
+ return $self->SUPER::contact_update($reg, $c, $changes, $rd);
+}
+
 sub domain_update
 {
  my ($self, $reg, $dom, $changes, $rd) = @_;
@@ -92,7 +110,7 @@ sub domain_update
  $rd->{contact} = $cs;
  $rd->{ns} = $ns;
 
- return $reg->process('domain', 'update', [$dom, $changes, $rd]);
+ return $self->SUPER::domain_update($reg, $dom, $changes, $rd);
 }
 
 sub domain_trade

@@ -76,12 +76,8 @@ sub register_commands
  my %tmp=( 
            check  => [ \&check, \&check_parse ],
            info   => [ \&info, \&info_parse ],
-           transfer_query  => [ \&transfer_query, \&transfer_parse ],
            create => [ \&create, \&create_parse ],
            delete => [ \&delete ],
-           transfer_request => [ \&transfer_request, \&transfer_parse ],
-           transfer_cancel  => [ \&transfer_cancel,\&transfer_parse ],
-           transfer_answer  => [ \&transfer_answer,\&transfer_parse ],
 	   update => [ \&update ],
            review_complete => [ undef, \&pandata_parse ],
          );
@@ -118,10 +114,11 @@ sub build_command
 
 sub check
 {
- my ($epp,$c)=@_;
- my $mes=$epp->message();
- my @d=build_command($mes,'check',$c);
+ my ($epp, $c)=@_;
+ my $mes = $epp->message();
+ my @d = build_command($mes, 'check', $c);
  $mes->command_body(\@d);
+ $mes->cltrid(undef);
 }
 
 sub check_parse
@@ -143,19 +140,20 @@ sub check_parse
 
 sub info
 {
- my ($epp,$c)=@_;
- my $mes=$epp->message();
- my @d=build_command($mes,'info',$c);
+ my ($epp, $c)=@_;
+ my $mes = $epp->message();
+ my @d = build_command($mes, 'info', $c);
  $mes->command_body(\@d);
+ $mes->cltrid(undef);
 }
 
 sub info_parse
 {
- my ($po,$otype,$oaction,$oname,$rinfo)=@_;
- my $mes=$po->message();
+ my ($po, $otype, $oaction, $oname, $rinfo) = @_;
+ my $mes = $po->message();
  return unless $mes->is_success();
 
- my $infdata=$mes->get_content('infoData',$mes->ns('contact'));
+ my $infdata = $mes->get_content('infoData', $mes->ns('contact'));
  return unless $infdata;
 
  my %cd=map { $_ => [] } qw/name org street city sp pc cc/;
@@ -165,37 +163,51 @@ sub info_parse
  while ($c)
  {
   next unless ($c->nodeType() == 1);
-  my $name=$c->localname() || $c->nodeName();
+  my $name = $c->localname() || $c->nodeName();
   next unless $name;
   if ($name eq 'handle')
   {
-   $oname=$c->getFirstChild()->getData();
-   $rinfo->{contact}->{$oname}->{action}='info';
-   $rinfo->{contact}->{$oname}->{exist}=1;
+   my $clID;
+   $oname = $c->getFirstChild()->getData();
+   if ($oname =~ /^(\w+)-(\d+)-/)
+   { $clID = $1 . '-' . $2 . '-RRI'; }
+   $rinfo->{contact}->{$oname}->{action} = 'info';
+   $rinfo->{contact}->{$oname}->{exist} = 1;
+   $rinfo->{contact}->{$oname}->{clID} =
+   $rinfo->{contact}->{$oname}->{crID} = $clID;
    $contact->srid($oname);
   } elsif ($name eq 'roid')
   {
-   $contact->roid($c->getFirstChild()->getData());
-   $rinfo->{contact}->{$oname}->{roid}=$contact->roid();
+   my $el = $c->getFirstChild();
+   $contact->roid($el->getData()) if (defined($el));
+   $rinfo->{contact}->{$oname}->{roid} = $contact->roid();
   } elsif ($name eq 'changed')
   {
-   $rinfo->{contact}->{$oname}->{upDate} = DateTime::Format::ISO8601->new()->
-	parse_datetime($c->getFirstChild()->getData());
+   my $el = $c->getFirstChild();
+   $rinfo->{contact}->{$oname}->{upDate} =
+   $rinfo->{contact}->{$oname}->{crDate} =
+	DateTime::Format::ISO8601->new()->
+	parse_datetime($c->getFirstChild()->getData()) if (defined($el));
   } elsif ($name eq 'type')
   {
-   $contact->type($c->getFirstChild()->getData());
+   my $el = $c->getFirstChild();
+   $contact->type($el->getData()) if (defined($el));
   } elsif ($name eq 'email')
   {
-   $contact->email($c->getFirstChild()->getData());
+   my $el = $c->getFirstChild();
+   $contact->email($el->getData()) if (defined($el));
   } elsif ($name eq 'name')
   {
-   $contact->name($c->getFirstChild()->getData());
+   my $el = $c->getFirstChild();
+   $contact->name($el->getData()) if (defined($el));
   } elsif ($name eq 'organisation')
   {
-   $contact->org($c->getFirstChild()->getData());
+   my $el = $c->getFirstChild();
+   $contact->org($el->getData()) if (defined($el));
   } elsif ($name eq 'sip')
   {
-   $contact->sip($c->getFirstChild()->getData());
+   my $el = $c->getFirstChild();
+   $contact->sip($el->getData()) if (defined($el));
   } elsif ($name eq 'phone')
   {
    $contact->voice(parse_tel($c));
@@ -284,46 +296,6 @@ sub parse_disclose ## RFC 4933 §2.9
   }
  } continue { $n=$n->getNextSibling(); }
  return \%tmp;
-}
-
-sub transfer_query
-{
- my ($epp,$c)=@_;
- my $mes=$epp->message();
- my @d=build_command($mes,['transfer',{'op'=>'query'}],$c);
- $mes->command_body(\@d);
-}
-
-sub transfer_parse
-{
- my ($po,$otype,$oaction,$oname,$rinfo)=@_;
- my $mes=$po->message();
- return unless $mes->is_success();
-
- my $trndata=$mes->get_content('trnData',$mes->ns('contact'));
- return unless $trndata;
-
- my $c=$trndata->getFirstChild();
- while ($c)
- {
-  next unless ($c->nodeType() == 1); ## only for element nodes
-  my $name=$c->localname() || $c->nodeName();
-  next unless $name;
-
-  if ($name eq 'id')
-  {
-   $oname=$c->getFirstChild()->getData();
-   $rinfo->{contact}->{$oname}->{id}=$oname;
-   $rinfo->{contact}->{$oname}->{action}='transfer';
-   $rinfo->{contact}->{$oname}->{exist}=1;
-  } elsif ($name=~m/^(trStatus|reID|acID)$/)
-  {
-   $rinfo->{contact}->{$oname}->{$1}=$c->getFirstChild()->getData();
-  } elsif ($name=~m/^(reDate|acDate)$/)
-  {
-   $rinfo->{contact}->{$oname}->{$1}=DateTime::Format::ISO8601->new()->parse_datetime($c->getFirstChild()->getData());
-  }
- } continue { $c=$c->getNextSibling(); }
 }
 
 ############ Transform commands
@@ -476,57 +448,35 @@ sub create_parse
 
 sub delete
 {
- my ($epp,$contact)=@_;
- my $mes=$epp->message();
- my @d=build_command($mes,'delete',$contact);
- $mes->command_body(\@d);
-}
-
-sub transfer_request
-{
- my ($epp,$c)=@_;
- my $mes=$epp->message();
- my @d=build_command($mes,['transfer',{'op'=>'request'}],$c);
- $mes->command_body(\@d);
-}
-
-sub transfer_cancel
-{
- my ($epp,$c)=@_;
- my $mes=$epp->message();
- my @d=build_command($mes,['transfer',{'op'=>'cancel'}],$c);
- $mes->command_body(\@d);
-}
-
-sub transfer_answer
-{
- my ($epp,$c,$approve)=@_;
- my $mes=$epp->message();
- my @d=build_command($mes,['transfer',{'op'=>((defined($approve) && $approve)? 'approve' : 'reject' )}],$c);
- $mes->command_body(\@d);
+ Net::DRI::Exception->die(0, 'RRI', 4, 'No contact delete available in RRI');
 }
 
 sub update
 {
- my ($epp,$contact,$todo)=@_;
- my $mes=$epp->message();
+ my ($epp, $contact, $todo) = @_;
+ my $mes = $epp->message();
 
- Net::DRI::Exception::usererr_invalid_parameters($todo." must be a Net::DRI::Data::Changes object") unless ($todo && ref($todo) && $todo->isa('Net::DRI::Data::Changes'));
+ Net::DRI::Exception::usererr_invalid_parameters($todo .
+	" must be a Net::DRI::Data::Changes object")
+	unless ($todo && ref($todo) && $todo->isa('Net::DRI::Data::Changes'));
  if ((grep { ! /^(?:add|del)$/ } $todo->types('status')) ||
      (grep { ! /^(?:set)$/ } $todo->types('info'))
     )
  {
-  Net::DRI::Exception->die(0,'protocol/RRI',11,'Only status add/del or info set available for contact');
+  Net::DRI::Exception->die(0, 'protocol/RRI', 11,
+	'Only status add/del or info set available for contact');
  }
 
- my @d=build_command($mes,'update',$contact);
+ my @d = build_command($mes, 'update', $contact);
 
- my $newc=$todo->set('info');
+ my $newc = $todo->set('info');
  if ($newc)
  {
-  Net::DRI::Exception->die(1,'protocol/RRI',10,'Invalid contact '.$newc) unless (UNIVERSAL::isa($newc,'Net::DRI::Data::Contact'));
+  Net::DRI::Exception->die(1, 'protocol/RRI', 10, 'Invalid contact ' . $newc)
+	unless (UNIVERSAL::isa($newc, 'Net::DRI::Data::Contact'));
+  $newc->type($contact->type());
   $newc->validate(1); ## will trigger an Exception if needed
-  push(@d,build_cdata($newc));
+  push(@d, build_cdata($newc));
  }
  $mes->command_body(\@d);
 }

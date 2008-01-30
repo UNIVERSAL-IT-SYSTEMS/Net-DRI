@@ -94,6 +94,7 @@ sub pollreq
  Net::DRI::Exception::usererr_invalid_parameters('In RRI, you can not specify the message id you want to retrieve') if defined($msgid);
  my $mes = $rri->message();
  $mes->command(['msg', 'queue-read', $mes->ns->{msg}->[0]]);
+ $mes->cltrid(undef);
 }
 
 ## We take into account all parse functions, to be able to parse any result

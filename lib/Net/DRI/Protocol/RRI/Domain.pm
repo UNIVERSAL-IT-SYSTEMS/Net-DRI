@@ -155,6 +155,7 @@ sub check
  my $mes = $rri->message();
  my @d = build_command($mes, 'check', $domain);
  $mes->command_body(\@d);
+ $mes->cltrid(undef);
 }
 
 
@@ -164,10 +165,10 @@ sub check_parse
  my $mes = $po->message();
  return unless $mes->is_success();
 
- my $chkdata = $mes->get_content('checkData',$mes->ns('domain'));
+ my $chkdata = $mes->get_content('checkData', $mes->ns('domain'));
  return unless $chkdata;
- my @d = $chkdata->getElementsByTagNameNS($mes->ns('domain'),'handle');
- my @s = $chkdata->getElementsByTagNameNS($mes->ns('domain'),'status');
+ my @d = $chkdata->getElementsByTagNameNS($mes->ns('domain'), 'handle');
+ my @s = $chkdata->getElementsByTagNameNS($mes->ns('domain'), 'status');
  return unless (@d && @s);
 
  my $dom = $d[0]->getFirstChild()->getData();
@@ -191,8 +192,9 @@ sub info
  my ($rri, $domain, $rd)=@_;
  my $mes = $rri->message();
  my @d = build_command($mes, 'info', $domain,
-	{recursive => 'false', withProvider => 'false'});
+	{recursive => 'false', withProvider => 'true'});
  $mes->command_body(\@d);
+ $mes->cltrid(undef);
 }
 
 sub info_parse
@@ -229,13 +231,15 @@ sub info_parse
    my $role = $c->getAttribute('role');
    my %rmap = (holder => 'registrant', 'admin-c' => 'admin',
 	'tech-c' => 'tech', 'zone-c' => 'zone');
+   my @hndl_tags = $c->getElementsByTagNameNS($mes->ns('contact'),'handle');
+   my $hndl_tag = $hndl_tags[0];
    $role = $rmap{$role} if (defined($rmap{$role}));
-   $cs->add($cf->()->srid($c->getFirstChild()->getFirstChild()->getData()),
-	$role);
+   $cs->add($cf->()->srid($hndl_tag->getFirstChild()->getData()), $role)
+	if (defined($hndl_tag));
   }
   elsif ($name eq 'dnsentry')
   {
-   $ns->add(parse_ns($c));
+   $ns->add(parse_ns($mes, $c));
   }
   elsif ($name eq 'regAccId')
   {
@@ -263,6 +267,7 @@ sub info_parse
 
 sub parse_ns
 {
+ my $mes = shift;
  my $node = shift;
  my $n = $node->getFirstChild();
  my $hostname = '';
@@ -278,6 +283,7 @@ sub parse_ns
   if ($name eq 'rdata')
   {
    my $nn = $n->getFirstChild();
+
    while ($nn)
    {
     next unless ($nn->nodeType() == 1); ## only for element nodes
@@ -286,6 +292,7 @@ sub parse_ns
     if ($name2 eq 'nameserver')
     {
      $hostname = $nn->getFirstChild()->getData();
+     $hostname =~ s/\.$// if ($hostname =~ /\.$/);
     }
     elsif ($name2 eq 'address')
     {
@@ -407,8 +414,7 @@ sub build_contact
 	'tech' => 'tech-c', 'zone' => 'zone-c');
 
  # All nonstandard contacts go into the extension section
- foreach my $t (sort(grep { $_ eq 'registrant' || $_ eq 'admin' ||
-	$_ eq 'tech' || $_ eq 'billing' || $_ eq 'onsite' } $cs->types()))
+ foreach my $t (sort($cs->types()))
  {
   my @o = $cs->get($t);
   my $c = (defined($trans{$t}) ? $trans{$t} : $t);
@@ -420,29 +426,15 @@ sub build_contact
 sub build_ns
 {
  my ($rri, $ns, $domain, $xmlns) = @_;
-
  my @d;
- my $asattr = $rri->{hostasattr};
 
- if ($asattr)
+ foreach my $i (1..$ns->count())
  {
-  foreach my $i (1..$ns->count())
-  {
-   my ($n, $r4, $r6) = $ns->get_details($i);
-   my @h;
-   push @h, ['domain:hostName', $n];
-   if (($n=~m/\S+\.${domain}$/i) || (lc($n) eq lc($domain)) || ($asattr == 2))
-   {
-    push @h, map { ['domain:hostAddr', $_, {ip =>' v4'}] } @$r4 if @$r4;
-    push @h, map { ['domain:hostAddr', $_, {ip =>' v6'}] } @$r6 if @$r6;
-   }
-   push @d, ['domain:hostAttr', @h];
-  }
- } else
- {
-  @d = map { ['dnsentry:dnsentry', {'xsi:type' => 'dnsentry:NS'},
-	['dnsentry:owner', $domain],
-	['dnsentry:rdata', ['dnsentry:nameserver', $_ ] ] ] } $ns->get_names();
+  my ($n, $v4, $v6) = $ns->get_details($i);
+  my @h = map { ['dnsentry:address', $_] } (@{$v4}, @{$v6});
+  push(@d, ['dnsentry:dnsentry', {'xsi:type' => 'dnsentry:NS'},
+	['dnsentry:owner', $domain . '.'],
+	['dnsentry:rdata', ['dnsentry:nameserver', $n . '.' ], @h ] ]);
  }
 
  $xmlns = 'dnsentry' unless defined($xmlns);
@@ -584,6 +576,7 @@ sub update
 {
  my ($rri, $domain, $todo, $rd) = @_;
  my $mes = $rri->message();
+ my %ns = map { $_ => $mes->ns->{$_}->[0] } qw(domain dnsentry xsi);
  my $ns = $rd->{ns};
  my $cs = $rd->{contact};
 
@@ -597,7 +590,7 @@ sub update
   Net::DRI::Exception->die(0, 'protocol/RRI', 11, 'Only ns/status/contact add/del or registrant/authinfo set available for domain');
  }
 
- my @d = build_command($mes, 'update', $domain);
+ my @d = build_command($mes, 'update', $domain, undef, \%ns);
 
  my $nsadd = $todo->add('ns');
  my $nsdel = $todo->del('ns');
@@ -617,7 +610,7 @@ sub update
   {
    if (!grep { $_ eq $hostname } $nsdel->get_names())
    {
-    $newns->add($hostname);
+    $newns->add($ns->get_details($hostname));
    }
   }
 

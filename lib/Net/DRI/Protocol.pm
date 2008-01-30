@@ -192,7 +192,7 @@ sub reaction
  }
 
  my $rc=$msg->result_status();
- $info{$otype}->{$oname}->{result_status}=$rc if (defined($oname) && $oname);
+ $info{$otype}->{$oname}->{result_status}=$rc if (defined($rc) && defined($oname) && $oname);
  $self->message(undef); ## needed ? useful ?
 
  return ($rc,\%info,$oname);

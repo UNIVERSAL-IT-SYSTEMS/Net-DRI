@@ -3,7 +3,7 @@
 use Net::DRI;
 use Net::DRI::Data::Raw;
 
-use Test::More tests => 7;
+use Test::More tests => 15;
 
 eval { use Test::LongString max => 100; $Test::LongString::Context=50; };
 *{'main::is_string'} = \&main::is if $@;
@@ -29,10 +29,24 @@ sub myrecv
 
 my $dri = Net::DRI->new(10);
 $dri->{trid_factory} = sub { return 'ABC-12345'; };
-$dri->add_registry('AT');
-$dri->target('AT')->new_current_profile('p1', 'Net::DRI::Transport::Dummy',
-	[{f_send => \&mysend, f_recv => \&myrecv}],
-		'Net::DRI::Protocol::EPP::Extensions::AT', []);
+eval {
+	$dri->add_registry('AT');
+	$dri->target('AT')->new_current_profile('p1',
+		'Net::DRI::Transport::Dummy',
+		[{f_send => \&mysend, f_recv => \&myrecv}],
+			'Net::DRI::Protocol::EPP::Extensions::AT', []);
+};
+if ($@)
+{
+	if (ref($@) eq 'Net::DRI::Exception')
+	{
+		die($@->as_string());
+	}
+	else
+	{
+		die($@);
+	}
+}
 
 my $rc;
 my $s;
@@ -76,6 +90,24 @@ is('' . $dri->get_info('qdate', 'message', 374185914), '2008-02-04T09:23:04',
 is($dri->get_info('lang', 'message', 374185914), 'en', 'message get_info lang');
 is($dri->get_info('roid', 'message', 374185914), undef,
 	'message get_info roid');
+is($dri->get_info('content', 'message', 374185914), 'EPP response to a ' .
+	'transaction executed on your behalf: objecttype [domain] ' .
+	'command [transfer-execute] objectname [mydomain.at]',
+	'message get_info content');
+is($dri->get_info('action', 'message', 374185914), 'transfer-execute',
+	'message get_info action');
+is($dri->get_info('object_type', 'message', 374185914), 'domain',
+	'message get_info object_type');
+is($dri->get_info('object_id', 'message', 374185914), 'mydomain.at',
+	'message get_info object_id');
+
+my $conds = $dri->get_info('conditions', 'message', 374185914);
+is($conds->[0]->{msg}, 'Registry::NICAT::Exception::Policy::Domain::Locked',
+	'message condition message');
+is($conds->[0]->{code}, 'NC20077', 'message condition code');
+is($conds->[0]->{severity}, 'error', 'message condition severity');
+is($conds->[0]->{details}, 'Domain mydomain.at: domain is locked.',
+	'message condition details');
 
 exit 0;
 

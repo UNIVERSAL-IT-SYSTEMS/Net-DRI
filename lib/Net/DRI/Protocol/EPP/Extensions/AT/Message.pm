@@ -99,19 +99,110 @@ sub pollreq
 ## We take into account all parse functions, to be able to parse any result
 sub parse_poll
 {
- my ($po,$otype,$oaction,$oname,$rinfo)=@_;
- my $mes=$po->message();
+ my ($po, $otype, $oaction, $oname, $rinfo) = @_;
+ my $mes = $po->message();
+ my $eppNS = $mes->ns('_main');
+ my $resNS = 'http://www.nic.at/xsd/at-ext-result-1.0';
+ my $epp;
+ my $rep;
+ my $ext;
+ my $ctag;
+ my @conds;
+ my @tags;
 
  return unless $mes->is_success();
  return if ($mes->{errcode} eq "1300");   # no messages in queue
 
+ my $msgid = $mes->msg_id();
+ $rinfo->{message}->{session}->{last_id} = $msgid;
 
- my $msgid=$mes->msg_id();
- $rinfo->{message}->{session}->{last_id}=$msgid;
+ my $mesdata = $mes->get_content('message', $NS, 0);
+ $rinfo->{$otype}->{$oname}->{message} = $mesdata;
 
- my $mesdata=$mes->get_content('message',$NS,0);
- $rinfo->{$otype}->{$oname}->{message}=$mesdata;
- return unless $mesdata;
+ return unless ($mesdata);
+
+ @tags = $mesdata->getElementsByTagNameNS($NS, 'desc');
+
+ $rinfo->{message}->{$msgid}->{content} = $tags[0]->getFirstChild()->getData()
+	if (@tags);
+
+ @tags = $mesdata->getElementsByTagNameNS($NS, 'data');
+ return unless (@tags);
+
+ my $data = $tags[0];
+
+ @tags = $data->getElementsByTagNameNS($NS, 'entry');
+
+ foreach my $entry (@tags)
+ {
+  next unless (defined($entry->getAttribute('name')));
+
+  if ($entry->getAttribute('name') eq 'objecttype')
+  {
+   $rinfo->{message}->{$msgid}->{object_type} =
+	$entry->getFirstChild()->getData();
+  }
+  elsif ($entry->getAttribute('name') eq 'command')
+  {
+   $rinfo->{message}->{$msgid}->{action} = $entry->getFirstChild()->getData();
+  }
+  elsif ($entry->getAttribute('name') eq 'objectname')
+  {
+   $rinfo->{message}->{$msgid}->{object_id} = $entry->getFirstChild()->getData();
+  }
+ }
+
+ @tags = $data->getElementsByTagNameNS($eppNS, 'epp');
+ return unless (@tags);
+ $epp = $tags[0];
+
+ @tags = $epp->getElementsByTagNameNS($eppNS, 'response');
+ return unless (@tags);
+ $rep = $tags[0];
+
+ @tags = $rep->getElementsByTagNameNS($eppNS, 'extension');
+ return unless (@tags);
+ $ext = $tags[0];
+
+ @tags = $ext->getElementsByTagNameNS($resNS, 'conditions');
+ return unless (@tags);
+ $ctag = $tags[0];
+
+ @tags = $ctag->getElementsByTagNameNS($resNS, 'condition');
+
+ foreach my $cond (@tags)
+ {
+  my %con;
+  my $c = $cond->getFirstChild();
+
+  $con{code} = $cond->getAttribute('code') if ($cond->getAttribute('code'));
+  $con{severity} = $cond->getAttribute('severity')
+	if ($cond->getAttribute('severity'));
+
+  while ($c)
+  {
+   next unless ($c->nodeType() == 1); ## only for element nodes
+   my $name = $c->localname() || $c->nodeName();
+   next unless $name;
+
+   if ($name =~ m/^(msg|details)$/)
+   {
+    $con{$1} = $c->getFirstChild()->getData();
+   }
+   elsif ($name eq 'attributes')
+   {
+    foreach my $attr ($c->getChildrenByTagNameNS($NS,'attr'))
+    {
+     my $attrname = $attr->getAttribute('name');
+     $con{"attr " . $attrname} = $attr->getFirstChild()->getData();
+    }
+   }
+  } continue { $c = $c->getNextSibling(); }
+
+  push(@conds, \%con);
+ }
+
+ $rinfo->{message}->{$msgid}->{conditions} = \@conds;
 }
 
 ####################################################################################################

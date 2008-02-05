@@ -326,9 +326,9 @@ sub parse
  ## result block(s)
  my @results=$res->getElementsByTagNameNS($NS,'result'); ## one element if success, multiple elements if failure RFC4930 §2.6
  @results = $res->getElementsByTagName('result') unless (@results);
- foreach (@results)
+ if (@results)
  {
-  my ($errc,$errm,$errl)=$self->parse_result($_);
+  my ($errc, $errm, $errl) = $self->parse_result($results[0]);
   ## TODO : store all in a stack (to preserve the list of results ?)
   $self->errcode($errc);
   $self->errmsg($errm);

@@ -82,13 +82,19 @@ sub parse
 {
  my ($po,$otype,$oaction,$oname,$rinfo)=@_;
  my $mes=$po->message();
+ my $pollmsg;
  return unless $mes->is_success();
 
- my $infdata=$mes->node_msg();
+ my $infdata = $mes->node_msg();
  return unless $infdata;
+
+ $pollmsg = $infdata->getFirstChild();
 
  my %w=(action => 'dnslu_notification', type => $infdata->getAttribute('type')); ## list of types p.36
  my (%ns,%e);
+
+ $w{type} = $pollmsg->getAttribute('type')
+ 	if (!defined($w{type}) && $pollmsg->localname() eq 'pollmsg');
 
  my $c=$infdata->getFirstChild()->getFirstChild();
  while ($c)

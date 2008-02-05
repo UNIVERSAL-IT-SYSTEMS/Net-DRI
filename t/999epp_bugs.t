@@ -3,7 +3,7 @@
 use Net::DRI;
 use Net::DRI::Data::Raw;
 
-use Test::More tests => 15;
+use Test::More tests => 19;
 
 eval { use Test::LongString max => 100; $Test::LongString::Context=50; };
 *{'main::is_string'} = \&main::is if $@;
@@ -108,6 +108,42 @@ is($conds->[0]->{code}, 'NC20077', 'message condition code');
 is($conds->[0]->{severity}, 'error', 'message condition severity');
 is($conds->[0]->{details}, 'Domain mydomain.at: domain is locked.',
 	'message condition details');
+
+eval {
+	$dri->add_registry('LU');
+	$dri->target('LU')->new_current_profile('p2',
+		'Net::DRI::Transport::Dummy',
+		[{f_send => \&mysend, f_recv => \&myrecv}],
+			'Net::DRI::Protocol::EPP::Extensions::LU', []);
+};
+if ($@)
+{
+	if (ref($@) eq 'Net::DRI::Exception')
+	{
+		die($@->as_string());
+	}
+	else
+	{
+		die($@);
+	}
+}
+
+$R2 = $E1 . '<response><result code="1301"><msg>[1301] Command completed successfully; ack to dequeue</msg></result><msgQ count="1" id="104574"><qDate>2008-01-24T12:41:03.000Z</qDate><msg><dnslu:pollmsg type="13" xmlns:dnslu="http://www.dns.lu/xml/epp/dnslu-1.0" xsi:schemaLocation="http://www.dns.lu/xml/epp/dnslu-1.0 dnslu-1.0.xsd"><dnslu:roid>D41231-DNSLU</dnslu:roid><dnslu:object>blafasel.lu</dnslu:object><dnslu:clTRID>DNSLU-4123-1342324575404832</dnslu:clTRID><dnslu:svTRID>CAFEBABE:002A-DNSLU</dnslu:svTRID><dnslu:exDate>2009-01-24T12:41:03.000Z</dnslu:exDate><dnslu:ns name="any">Nameserver test succeeded</dnslu:ns></dnslu:pollmsg></msg></msgQ>' . $TRID . '</response>' . $E2;
+
+eval {
+	$rc = $dri->message_retrieve();
+};
+is($rc->is_success(), 1, 'message polled successfully');
+
+unless ($rc->is_success())
+{
+	die('Error ' . $rc->code() . ': ' . $rc->message());
+}
+
+is($dri->get_info('last_id'), 104574, 'message get_info last_id');
+is($dri->get_info('type', 'message', 104574), 13, 'message get_info type');
+is($dri->get_info('roid', 'message', 104574), 'D41231-DNSLU',
+	'message get_info roid');
 
 exit 0;
 

@@ -1,4 +1,4 @@
-## Domain Registry Interface, .CN policies
+## Domain Registry Interface, .CN IDN policies
 ##
 ## Copyright (c) 2007 Distribute.IT Pty Ltd, www.distributeit.com.au,
 ##                    Rony Meyer <perl@spot-light.ch>.
@@ -17,7 +17,7 @@
 #
 ####################################################################################################
 
-package Net::DRI::DRD::CN;
+package Net::DRI::DRD::IDNCN;
 
 use strict;
 use base qw/Net::DRI::DRD/;
@@ -30,7 +30,7 @@ our $VERSION=do { my @r=(q$Revision: 1.1 $=~/\d+/g); sprintf("%d".".%02d" x $#r,
 
 =head1 NAME
 
-Net::DRI::DRD::CN - .CN policies for Net::DRI
+Net::DRI::DRD::IDNCN - .CN policies for Net::DRI
 
 =head1 DESCRIPTION
 
@@ -71,27 +71,27 @@ See the LICENSE file that comes with this distribution for more details.
 
 sub new
 {
- my $proto=shift;
- my $class=ref($proto) || $proto;
+ my $proto = shift;
+ my $class = ref($proto) || $proto;
 
- my $self=$class->SUPER::new(@_);
+ my $self = $class->SUPER::new(@_);
  $self->{info}->{host_as_attr}=0;
 
- bless($self,$class);
+ bless($self, $class);
  return $self;
 }
 
 sub periods  { return map { DateTime::Duration->new(years => $_) } (1..10); }
-sub name     { return 'CN'; }
-sub tlds     { return ('cn'); }
-sub object_types { return ('domain','contact','ns'); }
+sub name     { return 'IDNCN'; }
+sub tlds     { return ('cn','xn--55qx5d','xn--fiqs8s','xn--io0a7i'); }
+sub object_types { return ('domain', 'contact', 'ns'); }
 
 sub transport_protocol_compatible
 {
- my ($self,$to,$po)=@_;
- my $pn=$po->name();
- my $pv=$po->version();
- my $tn=$to->name();
+ my ($self, $to, $po) = @_;
+ my $pn = $po->name();
+ my $pv = $po->version();
+ my $tn = $to->name();
 
  return 1 if (($pn eq 'EPP') && ($tn eq 'socket_inet'));
  return 1 if (($pn eq 'Whois') && ($tn eq 'socket_inet'));
@@ -100,10 +100,10 @@ sub transport_protocol_compatible
 
 sub transport_protocol_default
 {
- my ($drd,$ndr,$type)=@_;
- $type='' if (!defined($type) || ref($type));
+ my ($drd, $ndr, $type) = @_;
+ $type = '' if (!defined($type) || ref($type));
  return ('Net::DRI::Transport::Socket','Net::DRI::Protocol::EPP') unless ($type);
- return ('Net::DRI::Transport::Socket',[{defer=>1,close_after=>1,socktype=>'tcp',remote_host=>'whois.cnnic.net.cn',remote_port=>43,protocol_connection=>'Net::DRI::Protocol::Whois::Connection',protocol_version=>1}],'Net::DRI::Protocol::Whois',[]) if (lc($type) eq 'whois');
+ return ('Net::DRI::Transport::Socket', [{defer => 1, close_after => 1, socktype => 'tcp', remote_host => 'whois.cnnic.net.cn', remote_port => 43, protocol_connection => 'Net::DRI::Protocol::Whois::Connection', protocol_version => 1}], 'Net::DRI::Protocol::Whois', []) if (lc($type) eq 'whois');
 
 }
 
@@ -111,21 +111,21 @@ sub transport_protocol_default
 
 sub verify_name_domain
 {
- my ($self,$ndr,$domain,$op)=@_;
- ($domain,$op)=($ndr,$domain) unless (defined($ndr) && $ndr && (ref($ndr) eq 'Net::DRI::Registry'));
+ my ($self, $ndr, $domain, $op) = @_;
+ ($domain, $op) = ($ndr, $domain) unless (defined($ndr) && $ndr && (ref($ndr) eq 'Net::DRI::Registry'));
 
- my $r=$self->SUPER::check_name($domain,1);
+ my $r = $self->SUPER::check_name($domain, 1);
  return $r if ($r);
  return 10 unless $self->is_my_tld($domain);
- return 11 if Net::DRI::DRD::ICANN::is_reserved_name($domain,$op);
+ return 11 if Net::DRI::DRD::ICANN::is_reserved_name($domain, $op);
 
  return 0;
 }
 
 sub domain_operation_needs_is_mine
 {
- my ($self,$ndr,$domain,$op)=@_;
- ($domain,$op)=($ndr,$domain) unless (defined($ndr) && $ndr && (ref($ndr) eq 'Net::DRI::Registry'));
+ my ($self, $ndr, $domain, $op) = @_;
+ ($domain, $op) = ($ndr, $domain) unless (defined($ndr) && $ndr && (ref($ndr) eq 'Net::DRI::Registry'));
 
  return unless defined($op);
 

@@ -2,8 +2,9 @@
 
 use Net::DRI;
 use Net::DRI::Data::Raw;
+use Net::DRI::DRD::ICANN;
 
-use Test::More tests => 23;
+use Test::More tests => 26;
 
 eval { use Test::LongString max => 100; $Test::LongString::Context=50; };
 *{'main::is_string'} = \&main::is if $@;
@@ -174,10 +175,18 @@ is($dri->get_info('type', 'message', 104574), 13, 'message get_info type');
 is($dri->get_info('roid', 'message', 104574), 'D41231-DNSLU',
 	'message get_info roid');
 
+is(Net::DRI::DRD::ICANN::is_reserved_name('test.com.cn', 'info'), 0,
+	'.com.cn registrability');
+is(Net::DRI::DRD::ICANN::is_reserved_name('xn--vcsq68l.com.cn', 'info'), 0,
+	'.com.cn IDN registrability');
+is(Net::DRI::DRD::ICANN::is_reserved_name('test.com.tw', 'info'), 0,
+	'.com.tw registrability');
+
 exit 0;
 
 sub r
 {
- my ($c,$m)=@_;
- return '<result code="'.($c || 1000).'"><msg>'.($m || 'Command completed successfully').'</msg></result>';
+ my ($c, $m) = @_;
+ return '<result code="' . ($c || 1000) . '"><msg>' .
+	($m || 'Command completed successfully') . '</msg></result>';
 }

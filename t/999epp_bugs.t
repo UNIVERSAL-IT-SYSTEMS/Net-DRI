@@ -4,7 +4,7 @@ use Net::DRI;
 use Net::DRI::Data::Raw;
 use Net::DRI::DRD::ICANN;
 
-use Test::More tests => 26;
+use Test::More tests => 32;
 
 eval { use Test::LongString max => 100; $Test::LongString::Context=50; };
 *{'main::is_string'} = \&main::is if $@;
@@ -138,6 +138,39 @@ is($dri->get_info('object_type', 'message', 375338309), 'domain',
 	'message get_info object_type');
 is($dri->get_info('object_id', 'message', 375338309), 'blafasel.at',
 	'message get_info object_id');
+is($dri->get_info('action', 'message', 375338309), 'domain-transferred-away',
+	'message get_info action');
+
+$R2 = $E1 . '<response><result code="1301"><msg>Command completed successfully; ack to dequeue</msg></result><msgQ count="3" id="375424692"><qDate>2008-02-06T13:37:59.63Z</qDate><msg>ATTENTION: domain weingeist.at is marked to be locked SKW - lock customer request.</msg></msgQ><resData><message xmlns="http://www.nic.at/xsd/at-ext-message-1.0" type="domain-info-lock-customer" xsi:schemaLocation="http://www.nic.at/xsd/at-ext-message-1.0 at-ext-message-1.0.xsd"><desc>ATTENTION: domain weingeist.at is marked to be locked SKW - lock customer request.</desc><data><entry name="domain">weingeist.at</entry></data></message></resData>' . $TRID . '</response>' . $E2;
+
+eval {
+	$rc = $dri->message_retrieve();
+};
+if ($@)
+{
+	if (ref($@) eq 'Net::DRI::Exception')
+	{
+		die($@->as_string());
+	}
+	else
+	{
+		die($@);
+	}
+}
+is($rc->is_success(), 1, 'message polled successfully');
+
+unless ($rc->is_success())
+{
+	die('Error ' . $rc->code() . ': ' . $rc->message());
+}
+
+is($dri->get_info('last_id'), 375424692, 'message get_info last_id 1');
+is($dri->get_info('object_type', 'message', 375424692), 'domain',
+	'message get_info object_type');
+is($dri->get_info('object_id', 'message', 375424692), 'weingeist.at',
+	'message get_info object_id');
+is($dri->get_info('action', 'message', 375424692), 'domain-info-lock-customer',
+	'message get_info action');
 
 eval {
 	$dri->add_registry('LU');

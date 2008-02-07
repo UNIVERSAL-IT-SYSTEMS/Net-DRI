@@ -103,6 +103,7 @@ sub parse_poll
  my $mes = $po->message();
  my $eppNS = $mes->ns('_main');
  my $resNS = 'http://www.nic.at/xsd/at-ext-result-1.0';
+ my $command;
  my $epp;
  my $rep;
  my $ext;
@@ -121,6 +122,7 @@ sub parse_poll
 
  return unless ($mesdata);
 
+ $command = $mesdata->getAttribute('type');
  @tags = $mesdata->getElementsByTagNameNS($NS, 'desc');
 
  $rinfo->{message}->{$msgid}->{content} = $tags[0]->getFirstChild()->getData()
@@ -158,6 +160,8 @@ sub parse_poll
 	$entry->getFirstChild()->getData();
   }
  }
+
+ $rinfo->{message}->{$msgid}->{action} ||= $command;
 
  @tags = $data->getElementsByTagNameNS($eppNS, 'epp');
  return unless (@tags);

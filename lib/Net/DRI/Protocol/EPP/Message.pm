@@ -30,7 +30,7 @@ use Net::DRI::Util;
 use Carp qw(confess);
 
 use base qw(Class::Accessor::Chained::Fast Net::DRI::Protocol::Message);
-__PACKAGE__->mk_accessors(qw(version errcode errmsg errlang command command_body cltrid svtrid ver04login msg_id node_resdata node_extension node_msg result_greeting result_extra_info));
+__PACKAGE__->mk_accessors(qw(version errcode errmsg errlang command command_body cltrid svtrid ver04login unspec msg_id node_resdata node_extension node_msg result_greeting result_extra_info));
 
 our $VERSION=do { my @r=(q$Revision: 1.18 $=~/\d+/g); sprintf("%d".".%02d" x $#r, @r); };
 
@@ -203,6 +203,15 @@ sub as_string
    }
   }
   push @d,'</extension>';
+ }
+
+ ## OPTIONAL unspec (Some registries unfortunately still use this)
+ my $unspec = $self->{unspec};
+ if (defined($unspec) && ref($unspec) eq 'ARRAY' && @{$unspec})
+ {
+  push(@d, '<unspec>');
+  push @d,xml_escape(@{$unspec});
+  push(@d, '</unspec>');
  }
 
  #### login for version 0.4

@@ -73,6 +73,7 @@ sub register_commands
  my ($class,$version)=@_;
  my %tmp=(
            restore_request => [ \&restore_request, undef ],
+           restore_report =>  [ \&restore_report, undef ],
          );
 
  return { 'domain' => \%tmp };
@@ -93,6 +94,64 @@ sub restore_request
 
  my $eid = $mes->command_extension_register('rgp:update','xmlns:rgp="urn:ietf:params:xml:ns:rgp-1.0" xsi:schemaLocation="urn:ietf:params:xml:ns:rgp-1.0 rgp-1.0.xsd"');
  $mes->command_extension($eid,['rgp:restore', { op => 'request' }]);
+}
+
+sub restore_report
+{
+ my ($epp, $domain, $rd) = @_;
+ my $mes = $epp->message();
+ my @b = Net::DRI::Protocol::EPP::Core::Domain::build_command($mes, 'update',
+	$domain);
+ my @d;
+ my @h;
+ push(@b, ['domain:chg']);
+ $mes->command_body(\@b);
+
+ return unless (defined($rd->{data}) && UNIVERSAL::isa($rd->{data},
+	'Net::DRI::Data::Changes') && defined($rd->{deleted}) &&
+	UNIVERSAL::isa($rd->{deleted}, 'DateTime') &&
+	defined($rd->{restored}) && UNIVERSAL::isa($rd->{restored}, 'DateTime')
+	&& defined($rd->{reason}));
+
+ my $eid = $mes->command_extension_register('rgp:update','xmlns:rgp="urn:ietf:params:xml:ns:rgp-1.0" xsi:schemaLocation="urn:ietf:params:xml:ns:rgp-1.0 rgp-1.0.xsd"');
+
+ push(@h, Net::DRI::Protocol::EPP::Core::Domain::build_ns($epp,
+	$rd->{data}->del('ns'), $domain));
+ push(@h, $rd->{data}->del('status')->build_xml('domain:status','core'));
+ unless (!defined($rd->{data}->del('contact')) ||
+	$rd->{data}->del('contact')->is_empty())
+ {
+  push(@h, ['domain:registrant', $rd->{data}->del('contact')->get('registrant')->srid()]);
+  push(@h, Net::DRI::Protocol::EPP::Core::Domain::build_contact_noregistrant(
+	$rd->{data}->del('contact')));
+ }
+
+ push(@d, ['rgp:preData', @h]);
+
+ @h = ();
+ push(@h, Net::DRI::Protocol::EPP::Core::Domain::build_ns($epp,
+	$rd->{data}->add('ns'), $domain));
+ push(@h, $rd->{data}->add('status')->build_xml('domain:status','core'));
+ unless (!defined($rd->{data}->add('contact')) ||
+	$rd->{data}->add('contact')->is_empty())
+ {
+  push(@h, ['domain:registrant', $rd->{data}->add('contact')->get('registrant')->srid()]);
+  push(@h, Net::DRI::Protocol::EPP::Core::Domain::build_contact_noregistrant(
+	$rd->{data}->add('contact')));
+ }
+
+ push(@d, ['rgp:postData', @h]);
+ push(@d, ['rgp:delTime', $rd->{deleted}->ymd . 'T' . $rd->{deleted}->hms .
+	'.0Z']);
+ push(@d, ['rgp:resTime', $rd->{restored}->ymd . 'T' . $rd->{restored}->hms .
+	'.0Z']);
+ push(@d, ['rgp:resReason', $rd->{reason}]);
+ push(@d, ['rgp:statement', 'This registrar has not restored the Registered Name in order to assume the rights to use or sell the Registered Name for itself or for any third party.']);
+ push(@d, ['rgp:statement', 'The information in this report is true to the best of this registrar\'s knowledge, and this registrar acknowledges that intentionally supplying false information in this report shall constitute an incurable material breach of the Registry-Registrar Agreement.']);
+ push(@d, ['rgp:other', $rd->{other}]) if (defined($rd->{other}) &&
+	length($rd->{other}));
+
+ $mes->command_extension($eid,['rgp:restore', { op => 'report' }, @d]);
 }
 
 ####################################################################################################

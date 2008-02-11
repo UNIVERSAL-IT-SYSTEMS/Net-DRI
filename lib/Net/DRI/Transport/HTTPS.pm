@@ -241,14 +241,12 @@ sub _webprint ## here we are sure open_connection() was called before
   $req = substr($req, 4);
  }
 
- warn('Sending: ' . $req);
  $res = $ua->post($self->url(), 'Content-Length' => $count, Content => $req);
 
  $self->{transport}->{response} = $res->content if ($res->is_success());
  Net::DRI::Exception->die(0,'transport/https', 4,
 	'Unable to send message: ' . $res->status_line)
 	unless ($res->is_success());
- warn('Received: ' . $res->content);
 
  return 1; ## very important
 }

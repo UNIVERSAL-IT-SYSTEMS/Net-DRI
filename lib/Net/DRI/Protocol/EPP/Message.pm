@@ -347,7 +347,8 @@ sub parse
   $self->errmsg($errm);
   $self->errlang($errl);
 
-  @msgs = $results[0]->getElementsByTagName('msg');
+  @msgs = $results[0]->getElementsByTagNameNS($NS, 'msg');
+  @msgs = $results[0]->getElementsByTagName('msg') unless (@msgs);
   $msg = $msgs[0];
  }
 

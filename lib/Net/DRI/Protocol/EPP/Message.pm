@@ -315,6 +315,8 @@ sub parse
  $xstr =~ s/^\s*//;
  my $doc=$parser->parse_string($xstr);
  my $root=$doc->getDocumentElement();
+ my $msg;
+
  Net::DRI::Exception->die(0,'protocol/EPP',1,'Unsuccessfull parse, root element is not epp') unless ($root->getName() eq 'epp');
 
  if ($root->getElementsByTagNameNS($NS,'greeting') ||
@@ -338,10 +340,15 @@ sub parse
  if (@results)
  {
   my ($errc, $errm, $errl) = $self->parse_result($results[0]);
+  my @msgs;
+
   ## TODO : store all in a stack (to preserve the list of results ?)
   $self->errcode($errc);
   $self->errmsg($errm);
   $self->errlang($errl);
+
+  @msgs = $results[0]->getElementsByTagName('msg');
+  $msg = $msgs[0];
  }
 
  if ($res->getElementsByTagNameNS($NS,'msgQ') || $res->getElementsByTagName('msgQ')) ## OPTIONAL
@@ -350,20 +357,29 @@ sub parse
   @msgqs = $res->getElementsByTagName('msgQ') unless (@msgqs);
   my $msgq = $msgqs[0];
   my $id = $msgq->getAttribute('id'); ## id of the message that has just been retrieved and dequeued (RFC4930) OR id of *next* available message (RFC3730)
-  $rinfo->{message}->{info}={ count => $msgq->getAttribute('count'), id => $id };
+  $id = $msg->getAttribute('id') if (!defined($id) && defined($msg) &&
+	defined($msg->getAttribute('id'))); # EPP 0.4
+  $rinfo->{message}->{info} = { count => $msgq->getAttribute('count'),
+	id => $id };
   if ($msgq->hasChildNodes()) ## We will have childs only as a result of a poll request
   {
-   my %d=( id => $id );
+   my %d = ( id => $id );
+   my $qdtag = ($msgq->getElementsByTagNameNS($NS,'qDate'))[0];
+   $qdtag = ($msgq->getElementsByTagName('qDate'))[0] unless (defined($qdtag));
    $self->msg_id($id);
-   $d{qdate}=DateTime::Format::ISO8601->new()->parse_datetime(($msgq->getElementsByTagNameNS($NS,'qDate'))[0]->firstChild()->getData());
-   my $msgc=($msgq->getElementsByTagNameNS($NS,'msg'))[0];
-   $msgc=($res->getElementsByTagName('msg'))[0] if (!$msgc);
-   $d{lang}=$msgc->getAttribute('lang') || 'en';
+   $d{qdate} = DateTime::Format::ISO8601->new()->parse_datetime(
+	$qdtag->firstChild()->getData());
+   my $msgc = ($msgq->getElementsByTagNameNS($NS,'msg'))[0];
+   $msgc = $msg if (!defined($msgc) && defined($msg));
+   $d{lang} = (defined($msgc) && defined($msgc->getAttribute('lang')) ?
+	$msgc->getAttribute('lang') : 'en');
 
-   if (grep { $_->nodeType() == 1 } $msgc->childNodes())
+   if (grep { $_->nodeType() == 1 && $_->nodeName() ne 'qDate' }
+	$msgc->childNodes())
    {
     $self->node_msg($msgc);
-   } else
+   }
+   else
    {
     $d{content}=$msgc->firstChild()->getData();
    }

@@ -4,7 +4,7 @@ use Net::DRI;
 use Net::DRI::Data::Raw;
 use Net::DRI::DRD::ICANN;
 
-use Test::More tests => 32;
+use Test::More tests => 43;
 
 eval { use Test::LongString max => 100; $Test::LongString::Context=50; };
 *{'main::is_string'} = \&main::is if $@;
@@ -207,6 +207,66 @@ is($dri->get_info('last_id'), 104574, 'message get_info last_id');
 is($dri->get_info('type', 'message', 104574), 13, 'message get_info type');
 is($dri->get_info('roid', 'message', 104574), 'D41231-DNSLU',
 	'message get_info roid');
+
+eval {
+	$dri->add_registry('CN');
+	$dri->target('CN')->new_current_profile('p3',
+		'Net::DRI::Transport::Dummy',
+		[{f_send => \&mysend, f_recv => \&myrecv,protocol_version => 0.4}],
+			'Net::DRI::Protocol::EPP::Extensions::CN', ['0.4']);
+};
+if ($@)
+{
+	if (ref($@) eq 'Net::DRI::Exception')
+	{
+		die($@->as_string());
+	}
+	else
+	{
+		die($@);
+	}
+}
+
+$R2 = $E1 . '<response><result code="1301"><msg id="52309" lang="en-US">Transfer Request</msg><value>SRS Major Code: 2000</value><value>SRS Minor Code: 20024</value></result><msgQ count="60"><qDate>2007-11-20T14:19:48.0Z</qDate></msgQ><resData><domain:trnData xmlns="urn:iana:xml:ns:domain-1.0" xmlns:domain="urn:iana:xml:ns:domain-1.0" xsi:schemaLocation="urn:iana:xml:ns:domain-1.0 domain-1.0.xsd"><domain:name>TRUCKSTORE.TW</domain:name><domain:trStatus>pending</domain:trStatus><domain:reID>1-5F3ZW</domain:reID><domain:reDate>2007-11-20T14:19:48.0Z</domain:reDate><domain:acID>2000000198</domain:acID><domain:acDate>2007-11-25T14:19:48.0Z</domain:acDate><domain:exDate>2008-12-18T23:59:59.0Z</domain:exDate></domain:trnData></resData>' . $TRID . '</response>' . $E2;
+
+eval {
+	$rc = $dri->message_retrieve();
+};
+if ($@)
+{
+	if (ref($@) eq 'Net::DRI::Exception')
+	{
+		die($@->as_string());
+	}
+	else
+	{
+		die($@);
+	}
+}
+is($rc->is_success(), 1, 'message polled successfully');
+
+unless ($rc->is_success())
+{
+	die('Error ' . $rc->code() . ': ' . $rc->message());
+}
+
+is($dri->get_info('last_id'), 52309, 'message get_info last_id 1');
+is($dri->get_info('last_id', 'message', 'session'), 52309,
+	'message get_info last_id 2');
+is('' . $dri->get_info('qdate', 'message', 52309), '2007-11-20T14:19:48',
+	'message get_info qdate');
+is($dri->get_info('id', 'message', 52309), 52309, 'message get_info id');
+is($dri->get_info('lang', 'message', 52309), 'en-US', 'message get_info lang');
+is($dri->get_info('roid', 'message', 52309), undef,
+	'message get_info roid');
+is($dri->get_info('content', 'message', 52309), 'Transfer Request',
+	'message get_info content');
+is($dri->get_info('action', 'message', 52309), 'transfer',
+	'message get_info action');
+is($dri->get_info('object_type', 'message', 52309), 'domain',
+	'message get_info object_type');
+is($dri->get_info('object_id', 'message', 52309), 'truckstore.tw',
+	'message get_info object_id');
 
 is(Net::DRI::DRD::ICANN::is_reserved_name('test.com.cn', 'info'), 0,
 	'.com.cn registrability');

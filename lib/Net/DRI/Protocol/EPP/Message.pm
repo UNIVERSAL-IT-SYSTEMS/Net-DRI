@@ -426,32 +426,35 @@ sub extract_trids
 
 sub parse_result
 {
- my ($self,$node)=@_;
- my $NS=$self->topns();
- my $code=$node->getAttribute('code');
- my $msg=($node->getElementsByTagNameNS($NS,'msg'))[0];
+ my ($self, $node) = @_;
+ my $NS = $self->topns();
+ my $code = $node->getAttribute('code');
+ my $msg = ($node->getElementsByTagNameNS($NS,'msg'))[0];
  $msg = ($node->getElementsByTagName('msg'))[0] unless (defined($msg));
- my $lang=$msg->getAttribute('lang') || 'en';
- $msg=$msg->firstChild()->getData();
+ my $lang = (defined($msg) && defined($msg->getAttribute('lang')) ?
+	$msg->getAttribute('lang') : 'en');
+ $msg = $msg->firstChild()->getData() if (defined($msg));
 
- my $c=$node->getFirstChild();
+ my $c = $node->getFirstChild();
  while ($c)
  {
   next unless ($c->nodeType() == 1); ## only for element nodes
-  my $name=$c->nodeName();
+  my $name = $c->nodeName();
   next unless $name;
  
   if ($name eq 'extValue') ## OPTIONAL
   {
-   push @{$self->{result_extra_info}},substr(substr($c->toString(),10),0,-11); ## grab everything as a string, without <extValue> and </extValue>
+   ## grab everything as a string, without <extValue> and </extValue>
+   push @{$self->{result_extra_info}}, substr(substr($c->toString(), 10),
+	0, -11);
   } elsif ($name eq 'value') ## OPTIONAL
   {
-   push @{$self->{result_extra_info}},$c->toString();
+   push @{$self->{result_extra_info}}, $c->toString();
   }
 
- } continue { $c=$c->getNextSibling(); }
+ } continue { $c = $c->getNextSibling(); }
 
- return ($code,$msg,$lang);
+ return ($code, $msg, $lang);
 }
 
 sub parse_greeting

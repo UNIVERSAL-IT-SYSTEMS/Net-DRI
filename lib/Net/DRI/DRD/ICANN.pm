@@ -88,7 +88,7 @@ sub is_reserved_name
  }
  ## §B.3
  ## Restriction lifted in newer gTLD
- unless ($d[0]=~m/^(?:travel|mobi|cat|tel)$/io||$d[-1]=~/^(?:cn|tw)/)
+ unless ($d[0]=~m/^(?:travel|mobi|cat|tel)$/io||$d[-1]=~/^(?:cn|tw|ag|bz|hn|lc|vc)/)
  {
   return 1 if ($d[-2]=~m/^(?:aero|arpa|biz|com|coop|edu|gov|info|int|mil|museum|name|net|org|pro)$/io);
  }

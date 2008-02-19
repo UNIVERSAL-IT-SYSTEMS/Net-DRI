@@ -78,6 +78,7 @@ sub new
 
  my $self=$class->SUPER::new(@_);
  $self->{info}->{host_as_attr}=0;
+ $self->{info}->{contact_i18n}=2;	## INT only
 
  bless($self,$class);
  return $self;

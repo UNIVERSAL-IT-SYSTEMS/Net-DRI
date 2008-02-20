@@ -74,7 +74,8 @@ sub register_commands
 
  my %tmp=(
 		check			=> [ undef, \&check_parse ],
-		create			=> [ \&create, undef ],
+		create			=> [ \&create ],
+		update			=> [ \&update ],
 		info			=> [ undef, \&info_parse ],
 		transfer_request	=> [ \&transfer_request, undef ]
          );
@@ -357,8 +358,21 @@ sub build_disclose
 
 sub build_cdata
 {
- my $contact=shift;
+ my ($contact, $v) = @_;
+ my $hasloc = $contact->has_loc();
+ my $hasint = $contact->has_int();
  my @d;
+
+ if ($hasint && !$hasloc && (($v & 5) == $v))
+ {
+  $contact->int2loc();
+  $hasloc = 1;
+ }
+ elsif ($hasloc && !$hasint && (($v & 6) == $v))
+ {
+  $contact->loc2int();
+  $hasint = 1;
+ }
 
  my (@post1,@post2,@addr1,@addr2);
  _do_locint(\@post1,\@post2,$contact,'name');
@@ -370,14 +384,9 @@ sub build_cdata
  _do_locint(\@addr1,\@addr2,$contact,'cc');
  push @post1,['contact:addr',@addr1] if @addr1;
  push @post2,['contact:addr',@addr2] if @addr2;
-
- if (defined($contact->type()) && $contact->type() eq 'int') {
-   push @d,['contact:ascii',@post1] if @post1;
-   #push @d,['contact:postalInfo',@post2,{type=>'loc'}] if @post2;
- } else {
-   push @d,['contact:ascii',@post1] if @post1;
-   #push @d,['contact:postalInfo',@post2,{type=>'int'}] if @post2;
- }
+ 
+ push @d,['contact:ascii',@post1] if (@post1 && ($v & 5) && $hasloc);
+ push @d,['contact:i15d',@post2] if (@post2 && ($v & 6) && $hasint);
 
  push @d,build_tel('contact:voice',$contact->voice()) if defined($contact->voice());
  push @d,build_tel('contact:fax',$contact->fax()) if defined($contact->fax());
@@ -412,7 +421,7 @@ sub create
 
  Net::DRI::Exception->die(1,'protocol/EPP',10,'Invalid contact '.$contact) unless (UNIVERSAL::isa($contact,'Net::DRI::Data::Contact'));
  $contact->validate(); ## will trigger an Exception if needed
- push @d,build_cdata($contact);
+ push @d,build_cdata($contact, $epp->{contacti18n});
  $mes->command_body(\@d);
 }
 
@@ -443,6 +452,38 @@ sub create_parse
   }
   $c=$c->getNextSibling();
  }
+}
+
+sub update
+{
+ my ($epp, $contact, $todo) = @_;
+ my $mes = $epp->message();
+
+ Net::DRI::Exception::usererr_invalid_parameters($todo.' must be a Net::DRI::Data::Changes object') unless ($todo && ref($todo) && $todo->isa('Net::DRI::Data::Changes'));
+ if ((grep { ! /^(?:add|del)$/ } $todo->types('status')) ||
+     (grep { ! /^(?:set)$/ } $todo->types('info')))
+ {
+  Net::DRI::Exception->die(0,'protocol/EPP',11,'Only status add/del or info set available for contact');
+ }
+
+ my @d = build_command($mes,'update',$contact);
+
+ my $sadd = $todo->add('status');
+ my $sdel = $todo->del('status');
+ push @d,['contact:add',$sadd->build_xml('contact:status')] if ($sadd);
+ push @d,['contact:rem',$sdel->build_xml('contact:status')] if ($sdel);
+
+ my $newc = $todo->set('info');
+ if ($newc)
+ {
+  Net::DRI::Exception->die(1, 'protocol/EPP', 10, 'Invalid contact ' . $newc)
+	unless (UNIVERSAL::isa($newc,'Net::DRI::Data::Contact'));
+  $newc->validate(1); ## will trigger an Exception if needed
+  my @c = build_cdata($newc, $epp->{contacti18n});
+  push(@d, ['contact:chg', @c]) if (@c);
+ }
+
+ $mes->command_body(\@d);
 }
 
 ####################################################################################################

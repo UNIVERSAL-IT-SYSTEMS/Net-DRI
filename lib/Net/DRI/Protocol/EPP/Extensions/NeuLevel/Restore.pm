@@ -102,7 +102,9 @@ sub renew
  $comment = join('', map { ucfirst($_) } split(/\s+/, $comment));
  $info{RestoreComment} = $comment;
 
- $mes->unspec([join(' ', map { $_ . '=' . $info{$_} } @vals)]);
+ my $eid = $mes->command_extension_register('neulevel:extension',
+	'xmlns:neulevel="urn:ietf:params:xml:ns:neulevel-1.0" xsi:schemaLocation="urn:ietf:params:xml:ns:neulevel-1.0 neulevel-1.0.xsd"');
+ $mes->command_extension($eid, ['neulevel:unspec', join(' ', map { $_ . '=' . $info{$_} } @vals)]);
 }
 
 ####################################################################################################

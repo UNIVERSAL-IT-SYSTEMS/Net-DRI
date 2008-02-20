@@ -4,7 +4,7 @@ use Net::DRI;
 use Net::DRI::Data::Raw;
 use Net::DRI::DRD::ICANN;
 
-use Test::More tests => 47;
+use Test::More tests => 48;
 
 eval { use Test::LongString max => 100; $Test::LongString::Context=50; };
 *{'main::is_string'} = \&main::is if $@;
@@ -298,6 +298,28 @@ if ($@)
 	}
 }
 is($rc->code(), 2400, 'broken hello request parsed successfully');
+
+eval {
+	$dri->add_registry('NAME');
+	$dri->target('NAME')->new_current_profile('p4',
+		'Net::DRI::Transport::Dummy',
+		[{f_send => \&mysend, f_recv => \&myrecv}],
+			'Net::DRI::Protocol::EPP::Extensions::NAME', ['1.0']);
+};
+if ($@)
+{
+	if (ref($@) eq 'Net::DRI::Exception')
+	{
+		die($@->as_string());
+	}
+	else
+	{
+		die($@);
+	}
+}
+
+is($dri->verify_name_domain('tonnerre.lombard.name', 'info'), 0,
+	'firstname.lastname.name registrability');
 
 exit 0;
 

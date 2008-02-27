@@ -669,7 +669,7 @@ sub host_create
  my ($self,$ndr,$dh,$rh)=@_;
 
  my $name=(UNIVERSAL::isa($dh,'Net::DRI::Data::Hosts'))? $dh->get_details(1) : $dh;
- err_invalid_host_name($name) if $self->verify_name_host($name,1);
+ err_invalid_host_name($name) if $self->verify_name_host($name);
  my $rc=$ndr->process('host','create',[$dh,$rh]);
 
  return $rc;

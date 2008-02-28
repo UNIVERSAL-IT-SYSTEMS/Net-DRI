@@ -90,10 +90,9 @@ sub validate ## See DENIC-11
 
 	if (!$change)
 	{
-		Net::DRI::Exception::usererr_insufficient_parameters('Invalid contact information: name/city/cc/email/srid mandatory')
+		Net::DRI::Exception::usererr_insufficient_parameters('Invalid contact information: name/city/cc/srid mandatory')
 			unless (scalar($self->name()) && scalar($self->city())
-				&& scalar($self->cc()) && $self->email() &&
-				$self->srid());
+				&& scalar($self->cc()) && $self->srid());
 		push @errs,'srid'
 			unless Net::DRI::Util::xml_is_token($self->srid(),
 				3, 16);

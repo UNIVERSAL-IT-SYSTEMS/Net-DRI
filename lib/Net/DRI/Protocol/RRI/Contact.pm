@@ -97,7 +97,7 @@ sub build_command
  foreach my $n (@c)
  {
   Net::DRI::Exception->die(1,'protocol/RRI',2,'Contact id needed') unless defined($n) && $n;
-  Net::DRI::Exception->die(1,'protocol/RRI',10,'Invalid contact id: '.$n) unless Net::DRI::Util::xml_is_token($n,3,16);
+  Net::DRI::Exception->die(1,'protocol/RRI',10,'Invalid contact id: '.$n) unless Net::DRI::Util::xml_is_token($n,3,32);
  }
 
  my $tcommand = (ref($command))? $command->[0] : $command;

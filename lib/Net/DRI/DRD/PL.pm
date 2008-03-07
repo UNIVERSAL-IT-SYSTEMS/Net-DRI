@@ -79,7 +79,7 @@ sub new
  return $self;
 }
 
-sub periods  { return map { DateTime::Duration->new(years => $_) } (1); }
+sub periods  { return map { DateTime::Duration->new(years => $_) } (1..10); }
 sub name     { return 'NASK'; }
 sub tlds     { return ('pl'); }
 sub object_types { return ('domain','contact','ns'); }

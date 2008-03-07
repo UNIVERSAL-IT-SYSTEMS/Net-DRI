@@ -150,8 +150,9 @@ lib/Net/DRI/Protocol/EPP/Extensions/Nominet/Contact.pm
 lib/Net/DRI/Protocol/EPP/Extensions/Nominet/Domain.pm
 lib/Net/DRI/Protocol/EPP/Extensions/Nominet/Host.pm
 lib/Net/DRI/Protocol/EPP/Extensions/NSgroup.pm
-lib/Net/DRI/Protocol/EPP/Extensions/PIR.pm
-lib/Net/DRI/Protocol/EPP/Extensions/PIR/IDNLanguage.pm
+lib/Net/DRI/Protocol/EPP/Extensions/Afilias.pm
+lib/Net/DRI/Protocol/EPP/Extensions/Afilias/IDNLanguage.pm
+lib/Net/DRI/Protocol/EPP/Extensions/Afilias/Restore.pm
 lib/Net/DRI/Protocol/EPP/Extensions/PL.pm
 lib/Net/DRI/Protocol/EPP/Extensions/PL/Contact.pm
 lib/Net/DRI/Protocol/EPP/Extensions/PL/Domain.pm

@@ -95,7 +95,7 @@ sub validate ## See DENIC-11
 				&& scalar($self->cc()) && $self->srid());
 		push @errs,'srid'
 			unless Net::DRI::Util::xml_is_token($self->srid(),
-				3, 16);
+				3, 32);
 	}
 
 	## \w includes _ in Perl

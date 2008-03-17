@@ -1,6 +1,6 @@
 #!/usr/bin/perl -w
 
-use Test::More tests => 187;
+use Test::More tests => 191;
 
 BEGIN { 
 use_ok('Net::DRI');
@@ -21,6 +21,7 @@ use_ok('Net::DRI::DRD::SE');
 use_ok('Net::DRI::DRD::PL');
 use_ok('Net::DRI::DRD::IENUMAT');
 use_ok('Net::DRI::DRD::CAT');
+use_ok('Net::DRI::DRD::CH');
 use_ok('Net::DRI::DRD::AERO');
 use_ok('Net::DRI::DRD::MOBI');
 use_ok('Net::DRI::DRD::BE');
@@ -54,6 +55,7 @@ use_ok('Net::DRI::Data::Contact::CAT');
 use_ok('Net::DRI::Data::Contact::AERO');
 use_ok('Net::DRI::Data::Contact::BE');
 use_ok('Net::DRI::Data::Contact::AT');
+use_ok('Net::DRI::Data::Contact::CH');
 use_ok('Net::DRI::Data::Contact::COOP');
 use_ok('Net::DRI::Data::Contact::LU');
 use_ok('Net::DRI::Data::Contact::ASIA');
@@ -144,6 +146,7 @@ use_ok('Net::DRI::Protocol::EPP::Extensions::ASIA::CED');
 use_ok('Net::DRI::Protocol::EPP::Extensions::ASIA::IPR');
 use_ok('Net::DRI::Protocol::EPP::Extensions::AU');
 use_ok('Net::DRI::Protocol::EPP::Extensions::AU::Domain');
+use_ok('Net::DRI::Protocol::EPP::Extensions::CH');
 use_ok('Net::DRI::Protocol::EPP::Extensions::E164Validation');
 use_ok('Net::DRI::Protocol::EPP::Extensions::E164Validation::RFC5076');
 use_ok('Net::DRI::Protocol::EPP::Extensions::Afilias');

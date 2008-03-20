@@ -17,6 +17,7 @@ WriteMakefile(
         'DateTime::Format::Strptime' => 0,
         'DateTime::TimeZone' => 0,
 	'DateTime::Format::ISO8601' => '0.06', ## version 0.0403 is also ok, version 0.05 IS NOT OK !
+	'DateTime::Format::Natural' => 0,
         'Class::Accessor' => 0,
         'Class::Accessor::Chained' => 0,
         'Time::HiRes' => 0,

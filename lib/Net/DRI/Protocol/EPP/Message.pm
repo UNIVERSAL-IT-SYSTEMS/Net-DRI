@@ -20,6 +20,7 @@ package Net::DRI::Protocol::EPP::Message;
 use strict;
 
 use DateTime::Format::ISO8601 ();
+use DateTime::Format::Natural ();
 use XML::LibXML ();
 use Encode ();
 
@@ -386,8 +387,15 @@ sub parse
    my $qdtag = $msgq->getElementsByTagNameNS($NS,'qDate')->shift();
    $qdtag = $msgq->getElementsByTagName('qDate')->shift();
    $self->msg_id($id);
-   $d{qdate}=DateTime::Format::ISO8601->new()->parse_datetime(
+   eval {
+    $d{qdate}=DateTime::Format::ISO8601->new()->parse_datetime(
 	$qdtag->firstChild()->getData());
+   };
+   if ($@)
+   {
+    $d{qdate}=DateTime::Format::Natural->new()->parse_datetime(
+	$qdtag->firstChild()->getData());
+   }
    my $msgc=$msgq->getElementsByTagNameNS($NS,'msg')->shift();
    $msgc=$res->getElementsByTagName('msg')->shift() unless (defined($msgc));
    $msgc=$msg unless (defined($msgc));

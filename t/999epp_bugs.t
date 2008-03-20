@@ -4,7 +4,7 @@ use Net::DRI;
 use Net::DRI::Data::Raw;
 use Net::DRI::DRD::ICANN;
 
-use Test::More tests => 48;
+use Test::More tests => 49;
 
 eval { use Test::LongString max => 100; $Test::LongString::Context=50; };
 *{'main::is_string'} = \&main::is if $@;
@@ -320,6 +320,43 @@ if ($@)
 
 is($dri->verify_name_domain('tonnerre.lombard.name', 'info'), 0,
 	'firstname.lastname.name registrability');
+
+eval {
+	$dri->add_registry('NU');
+	$dri->target('NU')->new_current_profile('p5',
+		'Net::DRI::Transport::Dummy',
+		[{f_send => \&mysend, f_recv => \&myrecv}],
+			'Net::DRI::Protocol::EPP::Extensions::NAME', ['1.0']);
+};
+if ($@)
+{
+	if (ref($@) eq 'Net::DRI::Exception')
+	{
+		die($@->as_string());
+	}
+	else
+	{
+		die($@);
+	}
+}
+
+$R2 = $E1 . '<response><result code="1301"><msg lang="en">Command completed successfully; ack to dequeue</msg></result><msgQ count="2" id="26966"><qDate>2007-11-19 14:46:28</qDate><msg>Transfer approved by .NU Domain Ltd</msg></msgQ><resData><domain:trnData xmlns:domain="urn:ietf:params:xml:ns:domain-1.0" xsi:schemaLocation="urn:ietf:params:xml:ns:domain-1.0 domain-1.0.xsd"><domain:name>blafasel.nu</domain:name><domain:trStatus/><domain:reID>Blafasel Inc</domain:reID><domain:reDate>2007-11-19T19:50:31.0Z</domain:reDate><domain:acID>.NU Domain Ltd</domain:acID><domain:acDate>2007-11-19T07:46:28.0Z</domain:acDate><domain:exDate>2009-03-08T18:44:50.0Z</domain:exDate></domain:trnData></resData>' . $TRID . '</response>' . $E2;
+
+eval {
+	$rc = $dri->message_retrieve();
+};
+if ($@)
+{
+	if (ref($@) eq 'Net::DRI::Exception')
+	{
+		die($@->as_string());
+	}
+	else
+	{
+		die($@);
+	}
+}
+is($rc->is_success(), 1, 'message polled successfully');
 
 exit 0;
 

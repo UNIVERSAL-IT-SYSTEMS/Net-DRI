@@ -328,7 +328,8 @@ sub transfer_parse
    $rinfo->{domain}->{$oname}->{exist}=1;
   } elsif ($name=~m/^(trStatus|reID|acID)$/)
   {
-   $rinfo->{domain}->{$oname}->{$1}=$c->getFirstChild()->getData();
+   my $fc = $c->getFirstChild();
+   $rinfo->{domain}->{$oname}->{$1}=$fc->getData() if (defined($fc));
   } elsif ($name=~m/^(reDate|acDate|exDate)$/)
   {
    $rinfo->{domain}->{$oname}->{$1}=$pd->parse_datetime($c->getFirstChild()->getData());

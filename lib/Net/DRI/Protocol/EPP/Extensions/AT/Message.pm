@@ -144,8 +144,10 @@ sub parse_poll
   }
   elsif ($entry->getAttribute('name') =~ /^(domain|contact|host)$/)
   {
+   my $text = $entry->getFirstChild();
    $rinfo->{message}->{$msgid}->{object_type}=$1;
-   $rinfo->{message}->{$msgid}->{object_id}=$entry->getFirstChild()->getData();
+   $rinfo->{message}->{$msgid}->{object_id} = $text->getData()
+	if (defined($text));
   }
  }
 

@@ -385,7 +385,8 @@ sub parse
   {
    my %d=( id => $id );
    my $qdtag = $msgq->getElementsByTagNameNS($NS,'qDate')->shift();
-   $qdtag = $msgq->getElementsByTagName('qDate')->shift();
+   $qdtag = $msgq->getElementsByTagName('qDate')->shift()
+	unless (defined($qdtag));
    $self->msg_id($id);
    eval {
     $d{qdate}=DateTime::Format::ISO8601->new()->parse_datetime(

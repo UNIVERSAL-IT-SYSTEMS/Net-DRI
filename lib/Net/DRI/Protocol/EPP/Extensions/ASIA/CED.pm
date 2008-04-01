@@ -120,18 +120,24 @@ sub dom_create
 sub dom_parse
 {
  my ($po,$otype,$oaction,$oname,$rinfo)=@_;
- my $mes=$po->message();
- my $ceddata=$mes->get_content('infData', 'urn:afilias:params:xml:ns:asia-1.0', 1);
- my $cs = $rinfo->{$otype}->{$oname}->{contact};
+ my $mes = $po->message();
+ my $ceddata = $mes->get_content('infData', 'urn:afilias:params:xml:ns:asia-1.0', 1);
+ my $cs;
  my $ct;
  my $c;
 
- return unless ($ceddata);
+ $cs = $rinfo->{$otype}->{$oname}->{contact}
+	if (defined($otype) && defined($oname) && defined($rinfo) &&
+	    defined($rinfo->{$otype}) && defined($rinfo->{$otype}->{$oname}) &&
+	    defined($rinfo->{$otype}->{$oname}->{contact}));;
+ return unless ($ceddata && $cs);
 
  $c = $ceddata->getElementsByTagNameNS('urn:afilias:params:xml:ns:asia-1.0',
 	'maintainerUrl');
  $rinfo->{$otype}->{$oname}->{url} = $c->shift()->getFirstChild()->getData()
 	if ($c);
+
+ return unless (defined($cs));
 
  foreach my $ct ($ceddata->getElementsByTagNameNS('urn:afilias:params:xml:ns:asia-1.0', 'contact'))
  {

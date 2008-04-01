@@ -110,6 +110,7 @@ sub verify_name_domain
  $domain=$ndr unless (defined($ndr) && $ndr && (ref($ndr) eq 'Net::DRI::Registry'));
 
  my $r=$self->SUPER::check_name($domain,1);
+ $r=$self->SUPER::check_name($domain,2) if ($r == 3);
  return $r if ($r);
  return 10 unless $self->is_my_tld($domain);
 

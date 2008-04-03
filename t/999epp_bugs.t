@@ -353,32 +353,6 @@ is($dri->verify_name_domain('tonnerre.lombard.name', 'info'), 0,
 	'firstname.lastname.name registrability');
 
 eval {
-	$dri->add_registry('PL');
-	$dri->target('PL')->new_current_profile('p5',
-		'Net::DRI::Transport::Dummy',
-		[{f_send => \&mysend, f_recv => \&myrecv}],
-			'Net::DRI::Protocol::EPP::Extensions::PL', ['1.0']);
-};
-if ($@)
-{
-	if (ref($@) eq 'Net::DRI::Exception')
-	{
-		die($@->as_string());
-	}
-	else
-	{
-		die($@);
-	}
-}
-
-is($dri->verify_name_domain('sygroup.group.pl', 'info'), 0,
-	'third.second.pl registrability');
-is($dri->verify_name_domain('sygroup.com.pl', 'info'), 0,
-	'third.com.pl registrability');
-is($dri->verify_name_domain('sygroup.net.pl', 'info'), 0,
-	'third.net.pl registrability');
-
-eval {
 	$dri->add_registry('NU');
 	$dri->target('NU')->new_current_profile('p6',
 		'Net::DRI::Transport::Dummy',

@@ -155,6 +155,7 @@ sub new
 {
  my $class=shift;
  my $self={ list => [] }; ## list=>[['',[ipv4],[ipv6]]+],options=>{}
+ $class = ref($class) if (length(ref($class)));
  bless($self,$class);
  $self->add(@_) if (@_);
  return $self;

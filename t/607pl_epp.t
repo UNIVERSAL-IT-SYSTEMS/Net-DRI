@@ -3,7 +3,7 @@
 use Net::DRI;
 use Net::DRI::Data::Raw;
 
-use Test::More tests => 12;
+use Test::More tests => 17;
 
 our $E1='<?xml version="1.0" encoding="UTF-8" standalone="no"?><epp xmlns="urn:ietf:params:xml:ns:epp-1.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="urn:ietf:params:xml:ns:epp-1.0 epp-1.0.xsd">';
 our $E2='</epp>';
@@ -135,5 +135,40 @@ is($R1,'<?xml version="1.0" encoding="UTF-8" standalone="no"?><epp xmlns="urn:ie
 is($rc->is_success(),1,'contact_update is_success');
 
 ## Example 14 is standard EPP, thus not tested here
+
+####################################################################################################
+## Bugs which turned up during production
+
+## Calling new on local_object('hosts')
+
+$R2=$E1.'<response><result code="1000"><msg lang="en-US">Command completed successfully</msg></result><resData><host:chkData xmlns:host="urn:ietf:params:xml:ns:host-1.0" xsi:schemaLocation="urn:ietf:params:xml:ns:host-1.0 host-1.0.xsd"><host:cd><host:name avail="1">ns1.rawr.com</host:name></host:cd></host:chkData></resData>'.$TRID.'</response>'.$E2;
+
+my $host = $dri->local_object('hosts')->new('ns1.rawr.com');
+
+eval {
+	$rc = $dri->host_check($host);
+};
+if ($@)
+{
+	if (ref($@))
+	{
+		die($@->as_string());
+	}
+	else
+	{
+		die($@);
+	}
+}
+is($rc->is_success(), 1, 'host_check is_success');
+is($dri->get_info('exist', 'host', 'ns1.rawr.com'), 0, 'host does not exist');
+
+## Multiple level domain registration
+
+is($dri->verify_name_domain('sygroup.group.pl', 'info'), 0,
+	'third.second.pl registrability');
+is($dri->verify_name_domain('sygroup.com.pl', 'info'), 0,
+	'third.com.pl registrability');
+is($dri->verify_name_domain('sygroup.net.pl', 'info'), 0,
+	'third.net.pl registrability');
 
 exit 0;

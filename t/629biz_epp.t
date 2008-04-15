@@ -5,7 +5,7 @@ use Net::DRI::Data::Raw;
 use DateTime::Duration;
 use Data::Dumper;
 
-use Test::More tests => 3;
+use Test::More tests => 4;
 
 eval { use Test::LongString max => 100; $Test::LongString::Context = 50; };
 *{'main::is_string'} = \&main::is if $@;
@@ -67,6 +67,26 @@ print(STDERR $@->as_string()) if ($@);
 isa_ok($rc, 'Net::DRI::Protocol::ResultStatus');
 is($rc->is_success(), 1, 'Domain successfully recovered');
 is($R1, '<?xml version="1.0" encoding="UTF-8" standalone="no"?><epp xmlns="urn:ietf:params:xml:ns:epp-1.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="urn:ietf:params:xml:ns:epp-1.0 epp-1.0.xsd"><command><renew><domain:renew xmlns:domain="urn:ietf:params:xml:ns:domain-1.0" xsi:schemaLocation="urn:ietf:params:xml:ns:domain-1.0 domain-1.0.xsd"><domain:name>deleted-by-accident.biz</domain:name><domain:curExpDate>2008-12-24</domain:curExpDate></domain:renew></renew><extension><neulevel:extension xmlns:neulevel="urn:ietf:params:xml:ns:neulevel-1.0" xsi:schemaLocation="urn:ietf:params:xml:ns:neulevel-1.0 neulevel-1.0.xsd"><neulevel:unspec>RestoreReasonCode=1 RestoreComment=DeletedByMistake TrueData=Y ValidUse=Y</neulevel:unspec></neulevel:extension></extension><clTRID>ABC-12345</clTRID></command></epp>', 'Recover Domain XML correct');
+
+####################################################################################################
+## Various poll messages
+$R2 = $E1 . '<response><result code="1000"><msg lang="en-US">Command completed successfully</msg><value><text>SRS Major Code: 2000</text></value><value><text>SRS Minor Code: 20025</text></value><value><text>--MESSAGE_SUCCESSFULLY_DEQUEUED</text></value><value><text>4242342</text></value></result><msgQ id="4242342" count="5"><msg>4242342</msg></msgQ>' . $TRID . '</response>' . $E2;
+
+eval {
+	$rc = $dri->message_retrieve();
+};
+if ($@)
+{
+	if (ref($@) eq 'Net::DRI::Exception')
+	{
+		die($@->as_string());
+	}
+	else
+	{
+		die($@);
+	}
+}
+is($rc->is_success(), 1, 'message polled successfully');
 
 ####################################################################################################
 exit(0);

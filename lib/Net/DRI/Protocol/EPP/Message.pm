@@ -347,14 +347,17 @@ sub parse
   {
    my %d=( id => $id );
    $self->msg_id($id);
-   eval {
-    $d{qdate}=DateTime::Format::ISO8601->new()->parse_datetime(
-	$qdtag->firstChild()->getData());
-   };
-   if ($@)
+   if (defined($qdtag) && defined($qdtag->firstChild()))
    {
-    $d{qdate}=DateTime::Format::Natural->new()->parse_datetime(
+    eval {
+     $d{qdate}=DateTime::Format::ISO8601->new()->parse_datetime(
 	$qdtag->firstChild()->getData());
+    };
+    if ($@)
+    {
+     $d{qdate}=DateTime::Format::Natural->new()->parse_datetime(
+	$qdtag->firstChild()->getData());
+    }
    }
    my $msgc=$msgq->getElementsByTagNameNS($NS,'msg')->shift();
    $msgc=$res->getElementsByTagName('msg')->shift() unless (defined($msgc));

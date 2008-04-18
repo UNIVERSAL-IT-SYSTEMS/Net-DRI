@@ -137,6 +137,13 @@ sub domain_operation_needs_is_mine
  return;
 }
 
+sub message_retrieve
+{
+ my ($self,$ndr,$id)=@_;
+ my $rc=$ndr->process('message','plretrieve',[$id]);
+ return $rc;
+}
+
 ## Only transfer requests are possible
 sub domain_transfer_stop    { Net::DRI::Exception->die(0,'DRD',4,'No domain transfer cancel available in .PL'); }
 sub domain_transfer_query   { Net::DRI::Exception->die(0,'DRD',4,'No domain transfer query available in .PL'); }

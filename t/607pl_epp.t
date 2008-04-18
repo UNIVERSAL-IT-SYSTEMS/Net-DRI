@@ -4,7 +4,7 @@ use Net::DRI;
 use Net::DRI::Data::Raw;
 use DateTime::Duration;
 
-use Test::More tests => 17;
+use Test::More tests => 23;
 
 our $E1='<?xml version="1.0" encoding="UTF-8" standalone="no"?><epp xmlns="urn:ietf:params:xml:ns:epp-1.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="urn:ietf:params:xml:ns:epp-1.0 epp-1.0.xsd">';
 our $E2='</epp>';
@@ -162,6 +162,31 @@ if ($@)
 }
 is($rc->is_success(), 1, 'host_check is_success');
 is($dri->get_info('exist', 'host', 'ns1.rawr.com'), 0, 'host does not exist');
+
+## .PL message polling
+
+$R2 = $E1 . '<response><result code="1301"><msg lang="en">Command completed successfully; ack to dequeue</msg></result><msgQ count="43" id="27389"><qDate>2008-04-07T09:28:40.163Z</qDate><msg lang="en">domain authInfo</msg></msgQ><resData><extdom:pollAuthInfo xmlns:extdom="http://www.dns.pl/NASK-EPP/extdom-1.0" xsi:schemaLocation="http://www.dns.pl/NASK-EPP/extdom-1.0 extdom-1.0.xsd"><extdom:domain><extdom:name>test.com.pl</extdom:name><extdom:authInfo><extdom:pw>JuhIFbrKfX4xReybrUe1pZs</extdom:pw></extdom:authInfo></extdom:domain></extdom:pollAuthInfo></resData>' . $TRID . '</response>' . $E2;
+
+eval {
+	$rc = $dri->message_retrieve();
+};
+if ($@)
+{
+	if (ref($@))
+	{
+		die($@->as_string());
+	}
+	else
+	{
+		die($@);
+	}
+}
+is($rc->is_success(), 1, 'message_retrieve');
+is($dri->get_info('last_id'), 27389, 'message get_info last_id 1');
+is_deeply([$dri->get_info('auth', 'domain', 'test.com.pl')], [{ pw => 'JuhIFbrKfX4xReybrUe1pZs' }], 'message get_info auth pw');
+is($dri->get_info('exist', 'domain', 'test.com.pl'), 1, 'Domain exists');
+is($dri->get_info('name', 'domain', 'test.com.pl'), 'test.com.pl', 'Domain name is correct');
+is($dri->get_info('action', 'message', 27389), 'pollAuthInfo', 'Action is pollAuthInfo');
 
 ## Multiple level domain registration
 

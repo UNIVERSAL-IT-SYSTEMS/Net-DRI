@@ -76,6 +76,7 @@ sub new
 
  $e{'Net::DRI::Protocol::EPP::Extensions::PL::Domain'}=1;
  $e{'Net::DRI::Protocol::EPP::Extensions::PL::Contact'}=1;
+ $e{'Net::DRI::Protocol::EPP::Extensions::PL::Message'}=1;
 ## $e{'Net::DRI::Protocol::EPP::Extensions::PL::Future'}=1; ## TODO
 
  my $self=$c->SUPER::new($drd,$version,[keys(%e)]); ## we are now officially a Net::DRI::Protocol::EPP object

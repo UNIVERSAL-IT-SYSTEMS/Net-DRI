@@ -3,7 +3,7 @@
 use Net::DRI;
 use Net::DRI::Data::Raw;
 
-use Test::More tests => 23;
+use Test::More tests => 29;
 
 our $E1='<?xml version="1.0" encoding="UTF-8" standalone="no"?><epp xmlns="urn:ietf:params:xml:ns:epp-1.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="urn:ietf:params:xml:ns:epp-1.0 epp-1.0.xsd">';
 our $E2='</epp>';
@@ -187,6 +187,31 @@ is($dri->get_info('exist', 'domain', 'test.com.pl'), 1, 'Domain exists');
 is($dri->get_info('name', 'domain', 'test.com.pl'), 'test.com.pl', 'Domain name is correct');
 is($dri->get_info('action', 'message', 27389), 'pollAuthInfo', 'Action is pollAuthInfo');
 
+## more .PL message polling
+
+$R2=$E1.'<response><result code="1301"><msg lang="en">Command completed successfully; ack to dequeue</msg></result><msgQ count="1" id="8308"><qDate>2008-04-18T07:03:35.880Z</qDate><msg lang="en">domain transfer requested</msg></msgQ><resData><domain:trnData xmlns:domain="urn:ietf:params:xml:ns:domain-1.0" xsi:schemaLocation="urn:ietf:params:xml:ns:domain-1.0 domain-1.0.xsd"><domain:name>syhosting.pl</domain:name><domain:trStatus>pending</domain:trStatus><domain:reID>theuser</domain:reID><domain:reDate>2008-04-18T07:03:35.487Z</domain:reDate><domain:acID>irgendwas</domain:acID><domain:acDate>2008-05-18T07:03:35.487Z</domain:acDate></domain:trnData></resData>'.$TRID.'</response>'.$E2;
+
+eval {
+	$rc = $dri->message_retrieve();
+};
+if ($@)
+{
+	if (ref($@))
+	{
+		die($@->as_string());
+	}
+	else
+	{
+		die($@);
+	}
+}
+is($rc->is_success(), 1, 'message_retrieve');
+is($dri->get_info('last_id'), 8308, 'message get_info last_id 1');
+is($dri->get_info('action', 'message', 8308), 'transfer', 'Action is correct');
+is($dri->get_info('content','message', 8308), 'domain transfer requested', 'Content is correct');
+is($dri->get_info('object_id', 'message', 8308), 'syhosting.pl', 'Object ID is correct');
+is($dri->get_info('object_type', 'message', 8308), 'domain', 'Object type is correct');
+
 ## Multiple level domain registration
 
 is($dri->verify_name_domain('sygroup.group.pl', 'info'), 0,
@@ -195,5 +220,6 @@ is($dri->verify_name_domain('sygroup.com.pl', 'info'), 0,
 	'third.com.pl registrability');
 is($dri->verify_name_domain('sygroup.net.pl', 'info'), 0,
 	'third.net.pl registrability');
+
 
 exit 0;

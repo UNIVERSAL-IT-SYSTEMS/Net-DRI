@@ -95,6 +95,7 @@ sub parse_poll
  my $msgid=$mes->msg_id();
  my $domname;
  my $domauth;
+ my $action;
 
  return unless $mes->is_success();
  return if ($mes->result_code() == 1300);	# no messages in queue
@@ -110,11 +111,11 @@ sub parse_poll
   if ($name eq 'pollAuthInfo') {
    my $ra = $rinfo->{message}->{$msgid}->{extra_info};
    push @{$ra}, $cnode;
-   $rinfo->{message}->{$msgid}->{action} = 'pollAuthInfo';
+   $action = 'pollAuthInfo';
    foreach my $cnode ($cnode->childNodes) {
     my $name = $cnode->localName || $cnode->nodeName;
     if ($name eq 'domain') {
-     $rinfo->{message}->{$msgid}->{object_type} = 'domain';
+     $otype = 'domain';
      foreach my $cnode ($cnode->childNodes) {
       my $name = $cnode->localName || $cnode->nodeName;
       if ($name eq 'name') {
@@ -125,9 +126,33 @@ sub parse_poll
      }
     }
    }
+  } else {
+   # copied from Net/DRI/Protocol/EPP/Core/Domain.pm:transfer_parse
+   my $trndata=$mes->get_content('trnData',$mes->ns('domain'));
+   if ($trndata) {
+    my $pd=DateTime::Format::ISO8601->new();
+    my $c=$trndata->getFirstChild();
+    while ($c) {
+     next unless ($c->nodeType() == 1); ## only for element nodes
+     my $name=$c->localname() || $c->nodeName();
+     next unless $name;
+
+     if ($name eq 'name') {
+      $domname = lc($c->getFirstChild()->getData());
+      $action = 'transfer';
+     } elsif ($name=~m/^(trStatus|reID|acID)$/) {
+      my $fc = $c->getFirstChild();
+      $rinfo->{domain}->{$domname}->{$1}=$fc->getData() if (defined($fc));
+     } elsif ($name=~m/^(reDate|acDate|exDate)$/) {
+      $rinfo->{domain}->{$domname}->{$1}=$pd->parse_datetime($c->getFirstChild()->getData());
+     }
+    } continue { $c=$c->getNextSibling(); }
+   }
   }
  }
  if (defined ($domname)) {
+  $otype = 'domain';
+  $oname = $domname;
   $rinfo->{domain}->{$domname}->{name} = $domname;
   $rinfo->{domain}->{$domname}->{exist} = 1;
   $rinfo->{message}->{$msgid}->{object_id} = $domname;
@@ -138,7 +163,13 @@ sub parse_poll
    };
   }
  }
-
+ if (defined ($action)) {
+  $rinfo->{message}->{$msgid}->{action} = $action;
+  if (defined ($domname)) {
+   $rinfo->{domain}->{$oname}->{action} = $action;
+  }
+ }
+ $rinfo->{message}->{$msgid}->{object_type} = $otype;
  $rinfo->{$otype}->{$oname}->{message}=$mesdata;
 }
 

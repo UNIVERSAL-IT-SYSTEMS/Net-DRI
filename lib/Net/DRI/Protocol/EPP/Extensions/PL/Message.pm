@@ -107,21 +107,26 @@ sub parse_poll
  $rinfo->{message}->{session}->{last_id}=$msgid;
 
  foreach my $cnode ($mesdata->childNodes) {
-  my $name = $cnode->localName || $cnode->nodeName;
-  if ($name eq 'pollAuthInfo') {
+  my $cmdname = $cnode->localName || $cnode->nodeName;
+
+  if ($cmdname eq 'pollAuthInfo') {
    my $ra = $rinfo->{message}->{$msgid}->{extra_info};
    push @{$ra}, $cnode;
    $action = 'pollAuthInfo';
+
    foreach my $cnode ($cnode->childNodes) {
-    my $name = $cnode->localName || $cnode->nodeName;
-    if ($name eq 'domain') {
+    my $objname = $cnode->localName || $cnode->nodeName;
+
+    if ($objname eq 'domain') {
      $otype = 'domain';
+
      foreach my $cnode ($cnode->childNodes) {
-      my $name = $cnode->localName || $cnode->nodeName;
-      if ($name eq 'name') {
+      my $infname = $cnode->localName || $cnode->nodeName;
+
+      if ($infname eq 'name') {
        $domname = $cnode->getFirstChild()->getData();
-      } elsif ($name eq 'authInfo') {
-       $domauth = $cnode->getFirstChild();
+      } elsif ($infname eq 'authInfo') {
+       $domauth = $cnode;
       }
      }
     }
@@ -157,10 +162,17 @@ sub parse_poll
   $rinfo->{domain}->{$domname}->{exist} = 1;
   $rinfo->{message}->{$msgid}->{object_id} = $domname;
   if (defined ($domauth)) {
-   my $name = $domauth->localName || $domauth->nodeName;
-   $rinfo->{domain}->{$domname}->{auth} = {
-    $name => $domauth->getFirstChild()->getData()
-   };
+   my $c = $domauth->getFirstChild();
+
+   while ($c)
+   {
+    my $typename;
+    next unless ($c->nodeType == 1);	## only for element nodes
+    $typename = $c->localName || $c->nodeName;
+    $rinfo->{domain}->{$domname}->{auth} = {
+     $typename => $c->getFirstChild()->getData()
+    };
+   } continue { $c = $c->getNextSibling(); }
   }
  }
  if (defined ($action)) {

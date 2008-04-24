@@ -26,7 +26,7 @@ use Net::DRI::Registry;
 use Net::DRI::Util;
 
 our $AUTOLOAD;
-our $VERSION='0.85';
+our $VERSION='0.85tl2';
 our $CVS_REVISION=do { my @r=(q$Revision: 1.28 $=~/\d+/g); sprintf("%d".".%02d" x $#r, @r); };
 
 =pod
@@ -43,7 +43,7 @@ Please see the README file for details.
 
 For now, support questions should be sent to:
 
-E<lt>netdri@dotandco.comE<gt>
+E<lt>development@sygroup.chE<gt>
 
 Please also see the SUPPORT file in the distribution.
 

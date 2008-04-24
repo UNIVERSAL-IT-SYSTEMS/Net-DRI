@@ -1,3 +1,24 @@
+0.85tl2 2008-04-24
+
++ Support for the Afilias CCTLDs (hn, sc, vc, ag, bz, lc, mn)
++ Fixed support for Neulevel restore
++ EPP 0.4 contact update (was broken in previous release)
++ Move PIR extensions to Afilias namespace to reflect their true nature
++ Corrected various aspects of .PL support: registration periods, message handling
++ Support for .CH/.LI (Switch.ch)
++ Various general message parsing fixes (adds dependency to DateTime::Format::Natural)
++ Fix for the Hosts object in case people call new twice
++ Added various new test suites
++ Support for .ME
+
+0.85tl1 2008-02-15
+
++ Support for the .CN and .TW TLDs
++ Domain restore methods: NeuLevel renew restore
++ HTTPS protocol support for communication with the NASK.pl interface
++ DENIC RRI protocol support for registration of domains in the .DE TLD
++ Various bugfixes
+
 0.85 2008-02-12
 
 + .UK EPP support: only some operations for now, see t/626nominet_epp.t (not implemented for now: domain & account updates, domain creations, registry notifications)

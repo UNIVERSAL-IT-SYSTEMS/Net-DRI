@@ -1,10 +1,28 @@
 SUPPORT
 -------
 
-Free, best effort support is available by email to netdri@dotandco.com
-or through Dot and Co newsgroups, for which you will find all information
-on http://www.dotandco.net/newsgroups.en
+Support for this version of Net::DRI can be obtained by contacting
+the SyGroup development team by email to development@sygroup.ch.
+If you are using the tl series of Net::DRI, please write your requests
+to this address instead of the Dot and Co support. Dot and Co will
+not support this version of Net::DRI.
 
-Net::DRI is being sponsored by Dot and Co (http://www.dotandco.com/).
+MAINLINE SUPPORT
+----------------
+
+Free, best effort support for the mainline version of Net::DRI is
+available by email to netdri@dotandco.com or through Dot and Co
+newsgroups, for which you will find all information on
+http://www.dotandco.net/newsgroups.en
+
+Please remember NOT to contact Dot and Co about your problems with
+the Net::DRI tl series, which can be recoglized by this note in
+the SUPPORT file! Please contact the SyGroup development support
+instead!
+
+This version of Net::DRI is sponsored by SyGroup GmbH
+(http://www.sygroup.ch/) while the mainline versions of Net::DRI are
+sponsored by Dot and Co (http://www.dotandco.com/).
 Professionnal support and specific development are available.
-Please contact netdri@dotandco.com for any information.
+Please contact development@sygroup.ch for any information on this
+release of Net::DRI, and netdri@dotandco.com for the mainline releases.

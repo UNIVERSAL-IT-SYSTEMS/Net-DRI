@@ -2,7 +2,8 @@ Net::DRI
 ========
 
 A Perl library to access Domain Name Registries/Registrars
-Copyright (c) 2005,2006,2007,2008 Patrick Mevzek <netdri@dotandco.com>
+Copyright (c) 2005,2006,2007,2008 Patrick Mevzek <netdri@dotandco.com>,
+Copyright (c) 2007,2008 Tonnerre Lombard <tonnerre.lombard@sygroup.ch>
 with help and bugfix from various individuals
 (see Changes file and our website)
 

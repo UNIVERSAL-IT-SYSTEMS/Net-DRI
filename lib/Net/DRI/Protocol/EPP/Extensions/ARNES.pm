@@ -1,6 +1,6 @@
-## Domain Registry Interface, PIR EPP extensions
+## Domain Registry Interface, ARNES (.SI) EPP extensions
 ##
-## Copyright (c) 2007 Tonnerre Lombard <tonnerre.lombard@sygroup.ch>. All rights reserved.
+## Copyright (c) 2008 Patrick Mevzek <netdri@dotandco.com>. All rights reserved.
 ##
 ## This file is part of Net::DRI
 ##
@@ -15,10 +15,11 @@
 #
 ####################################################################################################
 
-package Net::DRI::Protocol::EPP::Extensions::PIR;
+package Net::DRI::Protocol::EPP::Extensions::ARNES;
 
 use strict;
 
+use Net::DRI::Data::Contact::ARNES;
 use base qw/Net::DRI::Protocol::EPP/;
 
 our $VERSION=do { my @r=(q$Revision: 1.1 $=~/\d+/g); sprintf("%d".".%02d" x $#r, @r); };
@@ -27,7 +28,7 @@ our $VERSION=do { my @r=(q$Revision: 1.1 $=~/\d+/g); sprintf("%d".".%02d" x $#r,
 
 =head1 NAME
 
-Net::DRI::Protocol::EPP::Extensions::PIR - PIR (.ORG) EPP extensions for Net::DRI
+Net::DRI::Protocol::EPP::Extensions::ARNES - ARNES (.SI) EPP extensions for Net::DRI
 
 =head1 DESCRIPTION
 
@@ -43,16 +44,15 @@ Please also see the SUPPORT file in the distribution.
 
 =head1 SEE ALSO
 
-E<lt>http://www.dotandco.com/services/software/Net-DRI/E<gt> and
-E<lt>http://oss.bsdprojects.net/projects/netdri/E<gt>
+E<lt>http://www.dotandco.com/services/software/Net-DRI/E<gt>
 
 =head1 AUTHOR
 
-Tonnerre Lombard E<lt>tonnerre.lombard@sygroup.chE<gt>
+Patrick Mevzek, E<lt>netdri@dotandco.comE<gt>
 
 =head1 COPYRIGHT
 
-Copyright (c) 2007 Tonnerre Lombard <tonnerre.lombard@sygroup.ch>.
+Copyright (c) 2008 Patrick Mevzek <netdri@dotandco.com>.
 All rights reserved.
 
 This program is free software; you can redistribute it and/or modify
@@ -65,27 +65,22 @@ See the LICENSE file that comes with this distribution for more details.
 =cut
 
 ####################################################################################################
-
 sub new
 {
- my $c=shift;
- my ($drd,$version,$extrah,$defproduct)=@_;
+ my ($c,$drd,$version,$extrah)=@_;
  my %e=map { $_ => 1 } (defined($extrah)? (ref($extrah)? @$extrah : ($extrah)) : ());
 
- ## We do no load automatically IDNLanguage as we do not know if it is
- ## mandatory
- if (exists($e{':full'})) ## useful shortcut, modeled after Perl itself
- {
-  delete($e{':full'});
-  $e{'Net::DRI::Protocol::EPP::Extensions::PIR::IDNLanguage'}=1;
-  $e{'Net::DRI::Protocol::EPP::Extensions::GracePeriod'}=1;
- }
+ $e{'Net::DRI::Protocol::EPP::Extensions::ARNES::Contact'}=1;
+ $e{'Net::DRI::Protocol::EPP::Extensions::ARNES::Domain'}=1;
 
- my $self=$c->SUPER::new($drd,$version,[keys(%e)]); ## we are now officially a Net::DRI::Protocol::EPP object
-
- bless($self,$c); ## rebless
+ my $self=$c->SUPER::new($drd,$version,[keys(%e)]);
+ $self->ns({ dnssi => ['http://www.arnes.si/xml/epp/dnssi-1.1','dnssi-1.1.xsd'],
+           });
+ $self->factories('contact',sub { return Net::DRI::Data::Contact::ARNES->new(@_); });
  return $self;
 }
+
+sub core_contact_types { return ('admin','tech'); } ## No billing contact in .SI
 
 ####################################################################################################
 1;

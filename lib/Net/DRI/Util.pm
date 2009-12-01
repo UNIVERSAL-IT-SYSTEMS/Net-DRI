@@ -502,7 +502,7 @@ sub xml_list_children
 {
  my $node=shift;
  ## '*' catch all element nodes being direct children of given node
- return map { [ $_->localname() || $_->nodeName(),$_ ] } grep { $_->nodeType() == 1 } $node->getChildrenByTagName('*');
+ return map { [ $_->localname() || $_->nodeName(),$_ ] } grep { $_->nodeType() == 1 } $node->childNodes();
 }
 
 sub xml_traverse

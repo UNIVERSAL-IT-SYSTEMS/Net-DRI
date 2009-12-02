@@ -386,7 +386,7 @@ sub end
   $p={};
  }
 
- $self->{driver}->end() if $self->{driver}->can('end');
+ $self->{driver}->end() if (defined($self->{driver}) && $self->{driver}->can('end'));
 }
 
 sub can

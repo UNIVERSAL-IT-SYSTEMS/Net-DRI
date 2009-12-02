@@ -4,7 +4,7 @@ use Net::DRI;
 use Net::DRI::Data::Raw;
 use Net::DRI::DRD::ICANN;
 
-use Test::More tests => 43;
+use Test::More tests => 44;
 
 eval { use Test::LongString max => 100; $Test::LongString::Context=50; };
 *{'main::is_string'} = \&main::is if $@;
@@ -274,6 +274,24 @@ is(Net::DRI::DRD::ICANN::is_reserved_name('xn--vcsq68l.com.cn', 'info'), 0,
 	'.com.cn IDN registrability');
 is(Net::DRI::DRD::ICANN::is_reserved_name('test.com.tw', 'info'), 0,
 	'.com.tw registrability');
+
+$R2 = $E1 . '<response><result code="2400"><msgs></msgs></result>' . $TRID . '</response>' . $E2;
+
+eval {
+	$rc = $dri->remote_object('session')->noop();
+};
+if ($@)
+{
+	if (ref($@) eq 'Net::DRI::Exception')
+	{
+		die($@->as_string());
+	}
+	else
+	{
+		die($@);
+	}
+}
+is($rc->code(), 2400, 'broken hello request parsed successfully');
 
 exit 0;
 

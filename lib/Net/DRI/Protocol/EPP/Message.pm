@@ -449,8 +449,9 @@ sub parse_result
  my $code=$node->getAttribute('code');
  my $msg=($node->getElementsByTagNameNS($NS,'msg'))[0];
  $msg = ($node->getElementsByTagName('msg'))[0] unless (defined($msg));
- my $lang=$msg->getAttribute('lang') || 'en';
- $msg=$msg->firstChild()->getData();
+ my $lang=(defined($msg)&&defined($msg->getAttribute('lang'))?
+	$msg->getAttribute('lang'):'en');
+ $msg=$msg->firstChild()->getData() if(defined($msg));
  my @i;
 
  my $c=$node->getFirstChild();

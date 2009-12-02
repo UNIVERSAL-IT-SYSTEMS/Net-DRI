@@ -25,6 +25,7 @@ WriteMakefile(
 	'Email::Valid' => 0,
 	'XML::LibXML' => 0,
 	'UNIVERSAL::require' => 0,
+	'Test::Perl::Critic' => 0,
     },
     dist                => { COMPRESS => 'gzip -9f', SUFFIX => 'gz', },
     clean               => { FILES => 'Net-DRI-*' },

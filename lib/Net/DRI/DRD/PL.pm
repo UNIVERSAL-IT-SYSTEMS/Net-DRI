@@ -90,7 +90,7 @@ sub transport_protocol_compatible
  my $pn=$po->name();
  my $tn=$to->name();
 
- return 1 if (($pn eq 'EPP') && ($tn eq 'socket_inet'));
+ return 1 if (($pn eq 'EPP') && ($tn eq 'socket_inet' || $tn eq 'https'));
  return;
 }
 

@@ -58,9 +58,10 @@ $R2 = $E1 . '<response>' . r(1001,'Command completed successfully; ' .
 	'action pending') . $TRID . '</response>' . $E2;
 
 eval {
-	$rc = $dri->domain_renew('deleted-by-accident.biz', undef,
-		new DateTime(year => 2008, month => 12, day => 24),
-		{rgp => { code => 1, comment => 'Deleted by mistake'}});
+	$rc = $dri->domain_renew('deleted-by-accident.biz', {
+		current_expiration => new DateTime(year => 2008, month => 12,
+			day => 24),
+		rgp => { code => 1, comment => 'Deleted by mistake'}});
 };
 print(STDERR $@->as_string()) if ($@);
 isa_ok($rc, 'Net::DRI::Protocol::ResultStatus');

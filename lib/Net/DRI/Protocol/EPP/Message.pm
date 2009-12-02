@@ -28,7 +28,7 @@ use Net::DRI::Exception;
 use Net::DRI::Util;
 
 use base qw(Class::Accessor::Chained::Fast Net::DRI::Protocol::Message);
-__PACKAGE__->mk_accessors(qw(version command command_body cltrid svtrid ver04login msg_id node_resdata node_extension node_msg result_greeting));
+__PACKAGE__->mk_accessors(qw(version command command_body cltrid svtrid ver04login unspec msg_id node_resdata node_extension node_msg result_greeting));
 
 our $VERSION=do { my @r=(q$Revision: 1.19 $=~/\d+/g); sprintf("%d".".%02d" x $#r, @r); };
 
@@ -232,6 +232,15 @@ sub as_string
    }
   }
   push @d,'</extension>';
+ }
+
+ ## OPTIONAL unspec (Some registries unfortunately still use this)
+ my $unspec = $self->{unspec};
+ if (defined($unspec) && ref($unspec) eq 'ARRAY' && @{$unspec})
+ {
+  push(@d, '<unspec>');
+  push @d,xml_escape(@{$unspec});
+  push(@d, '</unspec>');
  }
 
  #### login for version 0.4

@@ -76,7 +76,7 @@ sub new
  my ($c,$drd,$rp)=@_;
  my $self=$c->SUPER::new();
  $self->name('EPP');
- my $version=Net::DRI::Util::check_equal($rp->{version},['1.0'],'1.0');
+ my $version=Net::DRI::Util::check_equal($rp->{version},['1.0','0.4'],'1.0');
  $self->version($version);
 
  foreach my $o (qw/ip status/) { $self->capabilities('host_update',$o,['add','del']); }
@@ -90,11 +90,22 @@ sub new
  $self->{contacti18n}=$drd->info('contact_i18n') || 7; ## bitwise OR with 1=LOC only, 2=INT only, 4=LOC+INT only
  $self->{defaulti18ntype}=undef; ## only needed for registries not following truely EPP standard, like .CZ
  $self->{usenullauth}=$drd->info('use_null_auth') || 0; ## See RFC4931 §3.2.5
+ if ($version gt '0.4')
+ {
  $self->ns({ _main   => ['urn:ietf:params:xml:ns:epp-1.0','epp-1.0.xsd'],
              domain  => ['urn:ietf:params:xml:ns:domain-1.0','domain-1.0.xsd'],
              host    => ['urn:ietf:params:xml:ns:host-1.0','host-1.0.xsd'],
              contact => ['urn:ietf:params:xml:ns:contact-1.0','contact-1.0.xsd'],
            });
+ }
+ else
+ {
+ $self->ns({ _main   => ['urn:iana:xml:ns:epp-1.0','epp-1.0.xsd'],
+             domain  => ['urn:iana:xml:ns:domain-1.0','domain-1.0.xsd'],
+             host    => ['urn:iana:xml:ns:host-1.0','host-1.0.xsd'],
+             contact => ['urn:iana:xml:ns:contact-1.0','contact-1.0.xsd'],
+           });
+ }
 
  $drd->set_factories($self) if $drd->can('set_factories');
  $self->factories('message',sub { my $m=Net::DRI::Protocol::EPP::Message->new(@_); $m->ns($self->ns()); $m->version($version); return $m; });

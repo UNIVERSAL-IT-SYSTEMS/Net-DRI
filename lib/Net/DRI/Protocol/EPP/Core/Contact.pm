@@ -210,7 +210,9 @@ sub info_parse
    parse_postalinfo($po,$c,\%cd);
   } elsif ($name eq 'authInfo') ## we only try to parse the authInfo version defined in the RFC, other cases are to be handled by extensions
   {
-   $contact->auth({pw => scalar Net::DRI::Util::xml_child_content($c,$mes->ns('contact'),'pw')});
+   my $element =
+	scalar Net::DRI::Util::xml_child_content($c,$mes->ns('contact'),'pw');
+   $contact->auth({pw => $element}) if ($element);
   } elsif ($name eq 'disclose')
   {
    $contact->disclose(parse_disclose($c));

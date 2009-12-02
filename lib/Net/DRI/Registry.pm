@@ -567,7 +567,7 @@ sub process_back
  {
   foreach my $key (keys(%{$ri->{$type}}))
   {
-   next if ($oname && ($type eq $otype) && ($key eq $oname));
+   next if (!$key || ($oname && ($type eq $otype) && ($key eq $oname)));
    $self->set_info($type,$key,$ri->{$type}->{$key});
   }
  }

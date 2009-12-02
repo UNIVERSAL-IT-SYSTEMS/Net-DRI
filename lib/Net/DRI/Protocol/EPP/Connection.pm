@@ -75,9 +75,10 @@ sub login
  my $got=$cm->();
  $got->parse($dr);
  my $rg=$got->result_greeting();
+ my $version=$got->version();
 
  my $mes=$cm->();
- $mes->command(['login']);
+ $mes->command([$version gt 0.4 ? 'login' : 'creds']);
  my @d;
  push @d,['clID',$id];
  push @d,['pw',$pass];
@@ -88,7 +89,15 @@ sub login
  push @s,map { ['objURI',$_] } @{$rg->{svcs}};
  push @s,['svcExtension',map {['extURI',$_]} @{$rg->{svcext}}] if (exists($rg->{svcext}) && defined($rg->{svcext}) && (ref($rg->{svcext}) eq 'ARRAY'));
  @s=$pdata->{login_service_filter}->(@s) if (defined($pdata) && ref($pdata) eq 'HASH' && exists($pdata->{login_service_filter}) && ref($pdata->{login_service_filter}) eq 'CODE');
- push @d,['svcs',@s] if @s;
+
+ if ($version gt 0.4)
+ {
+	push @d,['svcs',@s] if @s;
+ }
+ else
+ {
+	$mes->ver04login(['svcs', @s]);
+ }
 
  $mes->command_body(\@d);
  $mes->cltrid($cltrid) if $cltrid;
@@ -117,18 +126,34 @@ sub keepalive
 sub read_data
 {
  my ($class,$to,$sock)=@_;
-
- my $c;
- my $rl=$sock->sysread($c,4); ## first 4 bytes are the packed length
- die(Net::DRI::Protocol::ResultStatus->new_error('COMMAND_FAILED_CLOSING','Unable to read EPP 4 bytes length (connection closed by registry '.$to->transport_data('remote_uri').' ?): '.($! || 'no error given'),'en')) unless (defined $rl && $rl==4);
- my $length=unpack('N',$c)-4;
+ my $version = $to->{transport}->{protocol_version};
  my $m='';
- while ($length > 0)
+
+ if ($version gt 0.4)
  {
-  my $new;
-  $length-=$sock->sysread($new,$length);
-  $m.=$new;
+  my $c;
+  my $rl=$sock->sysread($c,4); ## first 4 bytes are the packed length
+  die(Net::DRI::Protocol::ResultStatus->new_error('COMMAND_FAILED_CLOSING','Unable to read EPP 4 bytes length (connection closed by registry '.$to->transport_data('remote_uri').' ?): '.($! || 'no error given'),'en')) unless (defined $rl && $rl==4);
+  my $length=unpack('N',$c)-4;
+  while ($length > 0)
+  {
+   my $new;
+   $length-=$sock->sysread($new,$length);
+   $m.=$new;
+  }
  }
+ else
+ {
+  my $byte;
+
+  while ($sock->read($byte, 1))
+  {
+   $m .= $byte;
+   last if ($m =~ m!</epp>$!);
+   $byte = undef;
+  }
+ }
+
  $m=Net::DRI::Util::decode_utf8($m);
  die(Net::DRI::Protocol::ResultStatus->new_error('COMMAND_SYNTAX_ERROR',$m? 'Got unexpected EPP message: '.$m : '<empty message from server>','en')) unless ($m=~m!</epp>\s*$!s);
  return Net::DRI::Data::Raw->new_from_xmlstring($m);

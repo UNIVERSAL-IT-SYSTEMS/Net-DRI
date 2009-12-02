@@ -29,7 +29,7 @@ use Net::DRI::Exception;
 use Net::DRI::Util;
 
 use base qw(Class::Accessor::Chained::Fast Net::DRI::Protocol::Message);
-__PACKAGE__->mk_accessors(qw(version command command_body cltrid svtrid msg_id node_resdata node_extension node_msg result_greeting));
+__PACKAGE__->mk_accessors(qw(version command command_body cltrid svtrid ver04login msg_id node_resdata node_extension node_msg result_greeting));
 
 our $VERSION=do { my @r=(q$Revision: 1.24 $=~/\d+/g); sprintf("%d".".%02d" x $#r, @r); };
 
@@ -230,6 +230,18 @@ sub as_string
   push @d,'</extension>';
  }
 
+ #### login for version 0.4
+ my $ver04login = $self->ver04login();
+ my $loginstr = "<login>\n <svcs>\n";
+ foreach my $obj (qw(contact host domain svcsub))
+ {
+	$loginstr .= '  <' . $obj . ':svc xmlns:' . $obj .
+		'="urn:iana:xml:ns:' . $obj . '-1.0" xsi:schemaLocation="' .
+		'urn:iana:xml:ns:' . $obj . '-1.0 ' . $obj . "-1.0.xsd\"/>\n";
+ }
+ $loginstr .= " </svcs>\n</login>\n";
+ push(@d, $loginstr) if (defined($ver04login) && $ver04login);
+
  ## OPTIONAL clTRID
  my $cltrid=$self->cltrid();
  if (defined($cmd) && ($cmd ne 'hello'))
@@ -252,6 +264,7 @@ sub _get_content
  my $ns=$self->ns($nstag);
  $ns=$nstag unless defined($ns) && $ns;
  my @tmp=$node->getChildrenByTagNameNS($ns,$nodename);
+ @tmp=$node->getChildrenByTagName($nodename) unless (@tmp);
  return unless @tmp;
  return $tmp[0];
 }
@@ -262,27 +275,39 @@ sub parse
 
  my $NS=$self->ns('_main');
  my $parser=XML::LibXML->new();
- my $doc=$parser->parse_string($dc->as_string());
+ my $xstr = $dc->as_string();
+ $xstr =~ s/^\s*//;
+ my $doc=$parser->parse_string($xstr);
  my $root=$doc->getDocumentElement();
+ my $msg;
+
  Net::DRI::Exception->die(0,'protocol/EPP',1,'Unsuccessfull parse, root element is not epp') unless ($root->getName() eq 'epp');
 
- if (my $g=$root->getChildrenByTagNameNS($NS,'greeting'))
+ my $g;
+ if ($g=($root->getChildrenByTagNameNS($NS,'greeting') ||
+	$root->getElementsByTagName('greeting')))
  {
   push @{$self->{results}},{ code => 1000, message => undef, lang => undef, extra_info => []}; ## fake an OK
   $self->result_greeting($self->parse_greeting($g->get_node(1)));
   return;
  }
  my $c=$root->getChildrenByTagNameNS($NS,'response');
+ $c=$root->getChildrenByTagName('response') unless (defined($c));
  Net::DRI::Exception->die(0,'protocol/EPP',1,'Unsuccessfull parse, no response block') unless ($c->size()==1);
  my $res=$c->get_node(1);
 
  ## result block(s)
- foreach my $result ($res->getChildrenByTagNameNS($NS,'result')) ## one element if success, multiple elements if failure RFC4930 §2.6
+ my @rb = $res->getChildrenByTagNameNS($NS,'result');
+ @rb = $res->getChildrenByTagName('result') unless (@rb);
+ foreach my $result (@rb) ## one element if success, multiple elements if failure RFC4930 §2.6
  {
   $self->parse_result($result);
+  $msg = $result->getElementsByTagNameNS($NS,'msg')->shift;
+  $msg = $result->getElementsByTagName('msg')->shift unless (defined($msg));
  }
 
  $c=$res->getChildrenByTagNameNS($NS,'msgQ');
+ $c=$res->getChildrenByTagName('msgQ') unless ($c);
  $rinfo->{message}->{info}={ count => 0, checked_on => DateTime->now() };
  if ($c->size()) ## OPTIONAL
  {
@@ -293,12 +318,16 @@ sub parse
   if ($msgq->hasChildNodes()) ## We will have childs only as a result of a poll request
   {
    my %d=( id => $id );
+   my $qdtag = $msgq->getElementsByTagNameNS($NS,'qDate')->shift();
+   $qdtag = $msgq->getElementsByTagName('qDate')->shift() unless ($qdtag);
    $self->msg_id($id);
    $d{qdate}=DateTime::Format::ISO8601->new()->parse_datetime(Net::DRI::Util::xml_child_content($msgq,$NS,'qDate'));
    my $msgc=$msgq->getChildrenByTagNameNS($NS,'msg')->get_node(1);
+   $msgc=$msgq->getChildrenByTagName('msg')->get_node(1) unless ($msgc);
    $d{lang}=$msgc->getAttribute('lang') || 'en';
 
-   if (grep { $_->nodeType() == 1 } $msgc->childNodes())
+   if (grep { $_->nodeType() == 1 && $_->nodeName() ne 'qDate' }
+	$msgc->childNodes())
    {
     $d{content}=$msgc->toString();
     $self->node_msg($msgc);
@@ -311,12 +340,15 @@ sub parse
  }
 
  $c=$res->getChildrenByTagNameNS($NS,'resData');
+ $c=$res->getChildrenByTagName('resData') unless ($c);
  $self->node_resdata($c->get_node(1)) if ($c->size()); ## OPTIONAL
  $c=$res->getChildrenByTagNameNS($NS,'extension');
+ $c=$res->getChildrenByTagName('extension') unless ($c);
  $self->node_extension($c->get_node(1)) if ($c->size()); ## OPTIONAL
 
  ## trID
  my $trid=$res->getChildrenByTagNameNS($NS,'trID')->get_node(1); ## we search only for <trID> as direct child of <response>, hence getChildren and not getElements !
+ $trid=$res->getChildrenByTagName('trID')->get_node(1) unless ($trid);
  my $tmp=Net::DRI::Util::xml_child_content($trid,$NS,'clTRID');
  $self->cltrid($tmp) if defined($tmp);
  $tmp=Net::DRI::Util::xml_child_content($trid,$NS,'svTRID');
@@ -328,6 +360,7 @@ sub parse_result
  my ($self,$node)=@_;
  my $code=$node->getAttribute('code');
  my $msg=$node->getChildrenByTagNameNS($self->ns('_main'),'msg')->get_node(1);
+ $msg=$node->getChildrenByTagName('msg')->get_node(1) unless ($msg);
  my $lang=$msg->getAttribute('lang') || 'en';
 
  my @i;

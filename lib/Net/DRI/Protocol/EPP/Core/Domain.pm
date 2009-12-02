@@ -228,7 +228,9 @@ sub info_parse
    $rinfo->{domain}->{$oname}->{$1}=$po->parse_iso8601($c->textContent());
   } elsif ($name eq 'authInfo') ## we only try to parse the authInfo version defined in the RFC, other cases are to be handled by extensions
   {
-   $rinfo->{domain}->{$oname}->{auth}={pw => scalar Net::DRI::Util::xml_child_content($c,$mes->ns('domain'),'pw')};
+   my $pw =
+	scalar Net::DRI::Util::xml_child_content($c,$mes->ns('domain'),'pw');
+   $rinfo->{domain}->{$oname}->{auth}={pw => $pw} if ($pw);
   }
  }
 

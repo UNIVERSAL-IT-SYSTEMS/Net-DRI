@@ -168,6 +168,7 @@ $cs->add($dri->local_object('contact')->srid('SK1-CZ'), 'admin');
 eval {
 	$rc = $dri->domain_create_only('sygroup.cz', {
 		contact =>	$cs,
+		nsset =>	'nameservers',
 		duration =>	DateTime::Duration->new(years => 2),
 		auth =>		{ pw => 'yumyumyum' }
 	});
@@ -186,7 +187,7 @@ if ($@)
 is($rc->is_success(), 1, 'domain create success');
 
 die('Error ' . $rc->code() . ': ' . $rc->message()) unless ($rc->is_success());
-is($R1, '<?xml version="1.0" encoding="UTF-8" standalone="no"?><epp xmlns="urn:ietf:params:xml:ns:epp-1.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="urn:ietf:params:xml:ns:epp-1.0 epp-1.0.xsd"><command><create><domain:create xmlns:domain="http://www.nic.cz/xml/epp/domain-1.3" xsi:schemaLocation="http://www.nic.cz/xml/epp/domain-1.3 domain-1.3.xsd"><domain:name>sygroup.cz</domain:name><domain:period unit="y">2</domain:period><domain:registrant>SG1-CZ</domain:registrant><domain:admin>SK1-CZ</domain:admin><domain:authInfo>yumyumyum</domain:authInfo></domain:create></create><clTRID>ABC-12345</clTRID></command>' . $E2, 'domain create xml correct');
+is($R1, '<?xml version="1.0" encoding="UTF-8" standalone="no"?><epp xmlns="urn:ietf:params:xml:ns:epp-1.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="urn:ietf:params:xml:ns:epp-1.0 epp-1.0.xsd"><command><create><domain:create xmlns:domain="http://www.nic.cz/xml/epp/domain-1.3" xsi:schemaLocation="http://www.nic.cz/xml/epp/domain-1.3 domain-1.3.xsd"><domain:name>sygroup.cz</domain:name><domain:period unit="y">2</domain:period><domain:nsset>nameservers</domain:nsset><domain:registrant>SG1-CZ</domain:registrant><domain:admin>SK1-CZ</domain:admin><domain:authInfo>yumyumyum</domain:authInfo></domain:create></create><clTRID>ABC-12345</clTRID></command>' . $E2, 'domain create xml correct');
 is($dri->get_info('crDate', 'domain', 'sygroup.cz'), '2008-05-07T14:31:26',
 	'domain create crdate');
 is($dri->get_info('exDate', 'domain', 'sygroup.cz'), '2009-05-07T00:00:00',
@@ -271,6 +272,7 @@ $cs = $dri->local_object('contactset');
 $cs->add($dri->local_object('contact')->srid('DA1-TZ'), 'admin');
 $todo->add('contact', $cs);
 
+$todo->set('nsset', 'alfredservers');
 $todo->set('auth', { pw => 'coincoin' });
 
 eval {
@@ -289,7 +291,7 @@ if ($@)
 }
 
 die('Error ' . $rc->code() . ': ' . $rc->message()) unless ($rc->is_success());
-is($R1, '<?xml version="1.0" encoding="UTF-8" standalone="no"?><epp xmlns="urn:ietf:params:xml:ns:epp-1.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="urn:ietf:params:xml:ns:epp-1.0 epp-1.0.xsd"><command><update><domain:update xmlns:domain="http://www.nic.cz/xml/epp/domain-1.3" xsi:schemaLocation="http://www.nic.cz/xml/epp/domain-1.3 domain-1.3.xsd"><domain:name>sybla.cz</domain:name><domain:add><domain:admin>DA1-TZ</domain:admin></domain:add><domain:rem><domain:admin>TL1-TZ</domain:admin></domain:rem><domain:chg><domain:authInfo>coincoin</domain:authInfo></domain:chg></domain:update></update><clTRID>ABC-12345</clTRID></command></epp>', 'domain renew xml correct');
+is($R1, '<?xml version="1.0" encoding="UTF-8" standalone="no"?><epp xmlns="urn:ietf:params:xml:ns:epp-1.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="urn:ietf:params:xml:ns:epp-1.0 epp-1.0.xsd"><command><update><domain:update xmlns:domain="http://www.nic.cz/xml/epp/domain-1.3" xsi:schemaLocation="http://www.nic.cz/xml/epp/domain-1.3 domain-1.3.xsd"><domain:name>sybla.cz</domain:name><domain:add><domain:admin>DA1-TZ</domain:admin></domain:add><domain:rem><domain:admin>TL1-TZ</domain:admin></domain:rem><domain:chg><domain:nsset>alfredservers</domain:nsset><domain:authInfo>coincoin</domain:authInfo></domain:chg></domain:update></update><clTRID>ABC-12345</clTRID></command></epp>', 'domain renew xml correct');
 
 ###############################################################################
 ## NSSET object

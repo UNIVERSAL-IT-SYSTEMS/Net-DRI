@@ -206,6 +206,11 @@ sub info_parse
 			$ns = Net::DRI::Data::Hosts->new() if (!$ns);
 			$ns->add($c->getFirstChild()->getData());
 		}
+		elsif ($name eq 'nsset')
+		{
+			$rinfo->{domain}->{$oname}->{nsset} =
+				$c->getFirstChild()->getData();
+		}
 		elsif ($name eq 'host')
 		{
 			push(@host, $c->getFirstChild()->getData());
@@ -269,7 +274,8 @@ sub create
 		push(@d, build_period($period));
 	}
 
-	## XXX: Nameserver sets, OPTIONAL
+	## Nameserver sets, OPTIONAL
+	push(@d, ['domain:nsset', $rd->{nsset}]) if (verify_rd($rd, 'nsset'));
 
 	## Contacts, all OPTIONAL
 	if (verify_rd($rd, 'contact') && UNIVERSAL::isa($rd->{contact},
@@ -342,8 +348,10 @@ sub update
 	push(@d, ['domain:add', @add]) if (@add);
 	push(@d, ['domain:rem', @del]) if (@del);
 
-	my $chg = $todo->set('registrant');
 	my @chg;
+	my $chg = $todo->set('nsset');
+	push(@chg, ['domain:nsset', $chg]) if (defined($chg) && length($chg));
+	$chg = $todo->set('registrant');
 	push(@chg, ['domain:registrant', $chg->srid()])
 		if ($chg && ref($chg) && UNIVERSAL::can($chg, 'srid'));
 	$chg = $todo->set('auth');

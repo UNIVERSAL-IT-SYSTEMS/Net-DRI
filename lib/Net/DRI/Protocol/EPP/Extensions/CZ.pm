@@ -93,6 +93,7 @@ sub new
 
  my $rcapa = $self->capabilities();
  delete($rcapa->{domain_update}->{status});
+ $rcapa->{domain_update}->{nsset} = ['set'];
 
  bless($self, $c); ## rebless
  return $self;

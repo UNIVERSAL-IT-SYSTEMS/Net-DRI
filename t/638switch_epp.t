@@ -29,10 +29,14 @@ sub myrecv
 		$E1 . '<response>' . r() . $TRID . '</response>' . $E2);
 }
 
-my $dri = Net::DRI->new(10);
+my $dri;
+eval {
+	$dri = Net::DRI->new(10);
+};
+print $@->as_string() if $@;
 $dri->{trid_factory} = sub { return 'ABC-12345'; };
-$dri->add_registry('SWITCH');
-$dri->target('SWITCH')->new_current_profile('p1', 'Net::DRI::Transport::Dummy',
+$dri->add_registry('CH');
+$dri->target('CH')->new_current_profile('p1', 'Net::DRI::Transport::Dummy',
 	[{f_send => \&mysend, f_recv => \&myrecv}], 'Net::DRI::Protocol::EPP',
 	[]);
 

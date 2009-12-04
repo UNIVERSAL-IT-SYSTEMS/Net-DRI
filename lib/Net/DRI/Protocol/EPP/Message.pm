@@ -463,6 +463,7 @@ sub parse_result
  $msg = ($node->getElementsByTagName('msg'))[0] unless (defined($msg));
  my $lang=(defined($msg)&&defined($msg->getAttribute('lang'))?
 	$msg->getAttribute('lang'):'en');
+ $msg = undef unless (defined($msg) && defined($msg->firstChild()));
  $msg=$msg->firstChild()->getData() if(defined($msg));
  my @i;
 

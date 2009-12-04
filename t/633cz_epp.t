@@ -6,7 +6,7 @@ use Net::DRI::Data::Raw;
 use DateTime;
 use DateTime::Duration;
 
-use Test::More tests => 19;
+use Test::More tests => 46;
 eval { no warnings; require Test::LongString; Test::LongString->import(max => 100); $Test::LongString::Context=50; };
 *{'main::is_string'}=\&main::is if $@;
 
@@ -290,6 +290,196 @@ if ($@)
 
 die('Error ' . $rc->code() . ': ' . $rc->message()) unless ($rc->is_success());
 is($R1, '<?xml version="1.0" encoding="UTF-8" standalone="no"?><epp xmlns="urn:ietf:params:xml:ns:epp-1.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="urn:ietf:params:xml:ns:epp-1.0 epp-1.0.xsd"><command><update><domain:update xmlns:domain="http://www.nic.cz/xml/epp/domain-1.3" xsi:schemaLocation="http://www.nic.cz/xml/epp/domain-1.3 domain-1.3.xsd"><domain:name>sybla.cz</domain:name><domain:add><domain:admin>DA1-TZ</domain:admin></domain:add><domain:rem><domain:admin>TL1-TZ</domain:admin></domain:rem><domain:chg><domain:authInfo>coincoin</domain:authInfo></domain:chg></domain:update></update><clTRID>ABC-12345</clTRID></command></epp>', 'domain renew xml correct');
+
+###############################################################################
+## NSSET object
+
+## NSSET check
+$R2 = $E1 . '<response><result code="1000"><msg>Command completed successfully</msg></result><resData><nsset:chkData xmlns:nsset="http://www.nic.cz/xml/epp/nsset-1.2" xsi:schemaLocation="http://www.nic.cz/xml/epp/nsset-1.2 nsset-1.2.xsd"><nsset:cd><nsset:id avail="0">testservers</nsset:id><nsset:id avail="1">prodservers</nsset:id></nsset:cd></nsset:chkData></resData>' . $TRID . '</response>' . $E2;
+
+my $ro = $dri->remote_object('nsset');
+
+eval {
+	$rc = $ro->check('testservers', 'prodservers');
+};
+if ($@)
+{
+	if (ref($@) eq 'Net::DRI::Exception')
+	{
+		die($@->as_string());
+	}
+	else
+	{
+		die($@);
+	}
+}
+
+die('Error ' . $rc->code() . ': ' . $rc->message()) unless ($rc->is_success());
+is($R1, '<?xml version="1.0" encoding="UTF-8" standalone="no"?><epp xmlns="urn:ietf:params:xml:ns:epp-1.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="urn:ietf:params:xml:ns:epp-1.0 epp-1.0.xsd"><command><check><nsset:check xmlns:nsset="http://www.nic.cz/xml/epp/nsset-1.2" xsi:schemaLocation="http://www.nic.cz/xml/epp/nsset-1.2 nsset-1.2.xsd"><nsset:id>testservers</nsset:id><nsset:id>prodservers</nsset:id></nsset:check></check><clTRID>ABC-12345</clTRID></command></epp>', 'nsset check xml correct');
+is($dri->get_info('exist', 'nsset', 'testservers'), 1,
+	'nsset check existent');
+is($dri->get_info('exist', 'nsset', 'prodservers'), 0,
+	'nsset check nonexistent');
+
+## NSSET create
+$R2 = $E1 . '<response><result code="1000"><msg>Command completed successfully</msg></result>' . $TRID . '</response>' . $E2;
+
+my $ns = $dri->local_object('hosts');
+$ns->add('dns1.syhosting.ch');
+$ns->add('dns2.syhosting.cz', [], ['2001:6b0:1:ea:202:a5ff:fecd:13a6']);
+$cs = $dri->local_object('contactset');
+$cs->add($dri->local_object('contact')->srid('TL1-CZ'), 'tech');
+
+eval {
+	$rc = $ro->create('testservers', {
+		ns =>		$ns,
+		contact =>	$cs,
+		reportlevel =>	5,
+		auth =>		{ pw => 'gnagnagna' }
+	});
+};
+if ($@)
+{
+	if (ref($@) eq 'Net::DRI::Exception')
+	{
+		die($@->as_string());
+	}
+	else
+	{
+		die($@);
+	}
+}
+
+die('Error ' . $rc->code() . ': ' . $rc->message()) unless ($rc->is_success());
+is($R1, '<?xml version="1.0" encoding="UTF-8" standalone="no"?><epp xmlns="urn:ietf:params:xml:ns:epp-1.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="urn:ietf:params:xml:ns:epp-1.0 epp-1.0.xsd"><command><create><nsset:create xmlns:nsset="http://www.nic.cz/xml/epp/nsset-1.2" xsi:schemaLocation="http://www.nic.cz/xml/epp/nsset-1.2 nsset-1.2.xsd"><nsset:id>testservers</nsset:id><nsset:ns><nsset:name>dns1.syhosting.ch</nsset:name></nsset:ns><nsset:ns><nsset:name>dns2.syhosting.cz</nsset:name><nsset:addr>2001:6b0:1:ea:202:a5ff:fecd:13a6</nsset:addr></nsset:ns><nsset:tech>TL1-CZ</nsset:tech><nsset:authInfo>gnagnagna</nsset:authInfo><nsset:reportlevel>5</nsset:reportlevel></nsset:create></create><clTRID>ABC-12345</clTRID></command></epp>', 'nsset create xml correct');
+
+## NSSET update
+$R2 = $E1 . '<response><result code="1000"><msg>Command completed successfully</msg></result>' . $TRID . '</response>' . $E2;
+
+$todo = $dri->local_object('changes');
+
+$cs = $dri->local_object('contactset');
+$cs->add($dri->local_object('contact')->srid('TL1-CZ'), 'tech');
+$todo->del('contact', $cs);
+
+$ns = $dri->local_object('hosts');
+$ns->add('dns2.syhosting.cz', [], ['2001:6b0:1:ea:202:a5ff:fecd:13a6']);
+$todo->del('ns', $ns);
+
+$cs = $dri->local_object('contactset');
+$cs->add($dri->local_object('contact')->srid('DA1-CZ'), 'tech');
+$todo->add('contact', $cs);
+
+$ns = $dri->local_object('hosts');
+$ns->add('dns3.syhosting.ch', ['194.25.2.129'], ['2001:3f8:bcd::1']);
+$todo->add('ns', $ns);
+
+$todo->set('auth', { pw => 'bliblablu'});
+$todo->set('reportlevel', 4);
+
+eval {
+	$rc = $ro->update('nameservers', $todo);
+};
+if ($@)
+{
+	if (ref($@) eq 'Net::DRI::Exception')
+	{
+		die($@->as_string());
+	}
+	else
+	{
+		die($@);
+	}
+}
+
+die('Error ' . $rc->code() . ': ' . $rc->message()) unless ($rc->is_success());
+is($R1, '<?xml version="1.0" encoding="UTF-8" standalone="no"?><epp xmlns="urn:ietf:params:xml:ns:epp-1.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="urn:ietf:params:xml:ns:epp-1.0 epp-1.0.xsd"><command><update><nsset:update xmlns:nsset="http://www.nic.cz/xml/epp/nsset-1.2" xsi:schemaLocation="http://www.nic.cz/xml/epp/nsset-1.2 nsset-1.2.xsd"><nsset:id>nameservers</nsset:id><nsset:add><nsset:ns><nsset:name>dns3.syhosting.ch</nsset:name><nsset:addr>194.25.2.129</nsset:addr><nsset:addr>2001:3f8:bcd::1</nsset:addr></nsset:ns><nsset:tech>DA1-CZ</nsset:tech></nsset:add><nsset:rem><nsset:name>dns2.syhosting.cz</nsset:name><nsset:tech>TL1-CZ</nsset:tech></nsset:rem><nsset:chg><nsset:authInfo>bliblablu</nsset:authInfo><nsset:reportlevel>4</nsset:reportlevel></nsset:chg></nsset:update></update><clTRID>ABC-12345</clTRID></command></epp>', 'nsset update xml correct');
+
+## NSSET delete
+$R2 = $E1 . '<response><result code="1000"><msg>Command completed successfully</msg></result>' . $TRID . '</response>' . $E2;
+
+eval {
+	$rc = $ro->delete('testservers');
+};
+if ($@)
+{
+	if (ref($@) eq 'Net::DRI::Exception')
+	{
+		die($@->as_string());
+	}
+	else
+	{
+		die($@);
+	}
+}
+
+die('Error ' . $rc->code() . ': ' . $rc->message()) unless ($rc->is_success());
+is($R1, '<?xml version="1.0" encoding="UTF-8" standalone="no"?><epp xmlns="urn:ietf:params:xml:ns:epp-1.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="urn:ietf:params:xml:ns:epp-1.0 epp-1.0.xsd"><command><delete><nsset:delete xmlns:nsset="http://www.nic.cz/xml/epp/nsset-1.2" xsi:schemaLocation="http://www.nic.cz/xml/epp/nsset-1.2 nsset-1.2.xsd"><nsset:id>testservers</nsset:id></nsset:delete></delete><clTRID>ABC-12345</clTRID></command></epp>', 'nsset delete xml correct');
+
+## NSSET info
+$R2 = $E1 . '<response><result code="1000"><msg>Command completed successfully</msg></result>' . $TRID . '</response>' . $E2;
+
+eval {
+	$rc = $ro->info('prodservers');
+};
+if ($@)
+{
+	if (ref($@) eq 'Net::DRI::Exception')
+	{
+		die($@->as_string());
+	}
+	else
+	{
+		die($@);
+	}
+}
+
+die('Error ' . $rc->code() . ': ' . $rc->message()) unless ($rc->is_success());
+is($R1, '<?xml version="1.0" encoding="UTF-8" standalone="no"?><epp xmlns="urn:ietf:params:xml:ns:epp-1.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="urn:ietf:params:xml:ns:epp-1.0 epp-1.0.xsd"><command><info><nsset:info xmlns:nsset="http://www.nic.cz/xml/epp/nsset-1.2" xsi:schemaLocation="http://www.nic.cz/xml/epp/nsset-1.2 nsset-1.2.xsd"><nsset:id>prodservers</nsset:id></nsset:info></info><clTRID>ABC-12345</clTRID></command></epp>', 'nsset info xml correct');
+
+## NSSET transfer query
+$R2 = $E1 . '<response><result code="1000"><msg>Command completed successfully</msg></result>' . $TRID . '</response>' . $E2;
+
+eval {
+	$rc = $ro->transfer_query('nameservers', { auth =>
+		{ pw => 'gnagnagna' }});
+};
+if ($@)
+{
+	if (ref($@) eq 'Net::DRI::Exception')
+	{
+		die($@->as_string());
+	}
+	else
+	{
+		die($@);
+	}
+}
+
+die('Error ' . $rc->code() . ': ' . $rc->message()) unless ($rc->is_success());
+is($R1, '<?xml version="1.0" encoding="UTF-8" standalone="no"?><epp xmlns="urn:ietf:params:xml:ns:epp-1.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="urn:ietf:params:xml:ns:epp-1.0 epp-1.0.xsd"><command><transfer op="query"><nsset:transfer xmlns:nsset="http://www.nic.cz/xml/epp/nsset-1.2" xsi:schemaLocation="http://www.nic.cz/xml/epp/nsset-1.2 nsset-1.2.xsd"><nsset:id>nameservers</nsset:id><nsset:authInfo>gnagnagna</nsset:authInfo></nsset:transfer></transfer><clTRID>ABC-12345</clTRID></command></epp>', 'nsset transfer query xml correct');
+
+## NSSET transfer request
+$R2 = $E1 . '<response><result code="1000"><msg>Command completed successfully</msg></result>' . $TRID . '</response>' . $E2;
+
+eval {
+	$rc = $ro->transfer_request('nameservers', { auth =>
+		{ pw => 'gnagnagna' }});
+};
+if ($@)
+{
+	if (ref($@) eq 'Net::DRI::Exception')
+	{
+		die($@->as_string());
+	}
+	else
+	{
+		die($@);
+	}
+}
+
+die('Error ' . $rc->code() . ': ' . $rc->message()) unless ($rc->is_success());
+is($R1, '<?xml version="1.0" encoding="UTF-8" standalone="no"?><epp xmlns="urn:ietf:params:xml:ns:epp-1.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="urn:ietf:params:xml:ns:epp-1.0 epp-1.0.xsd"><command><transfer op="request"><nsset:transfer xmlns:nsset="http://www.nic.cz/xml/epp/nsset-1.2" xsi:schemaLocation="http://www.nic.cz/xml/epp/nsset-1.2 nsset-1.2.xsd"><nsset:id>nameservers</nsset:id><nsset:authInfo>gnagnagna</nsset:authInfo></nsset:transfer></transfer><clTRID>ABC-12345</clTRID></command></epp>', 'nsset transfer request xml correct');
 
 ###############################################################################
 ## Registry Messages

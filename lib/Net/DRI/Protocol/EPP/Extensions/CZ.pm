@@ -78,6 +78,7 @@ sub new
  my %e = map { $_ => 1 } (defined($extrah) ? (ref($extrah) ? @$extrah :
 	($extrah)) : ());
 
+ $e{'Net::DRI::Protocol::EPP::Extensions::CZ::NSSET'} = 1;
  $e{'Net::DRI::Protocol::EPP::Extensions::CZ::Contact'} = 1;
  $e{'Net::DRI::Protocol::EPP::Extensions::CZ::Domain'} = 1;
  $e{'Net::DRI::Protocol::EPP::Extensions::NSgroup'} = 1;

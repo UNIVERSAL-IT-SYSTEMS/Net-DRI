@@ -4,7 +4,7 @@ use Net::DRI;
 use Net::DRI::Data::Raw;
 use DateTime::Duration;
 
-use Test::More tests => 213;
+use Test::More tests => 217;
 eval { no warnings; require Test::LongString; Test::LongString->import(max => 100); $Test::LongString::Context=50; };
 *{'main::is_string'}=\&main::is if $@;
 
@@ -376,6 +376,50 @@ if ($@)
 }
 is($R1,'<?xml version="1.0" encoding="UTF-8" standalone="no"?><epp xmlns="http://www.eurid.eu/xml/epp/epp-1.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.eurid.eu/xml/epp/epp-1.0 epp-1.0.xsd"><command><transfer op="cancel"><domain:transfer xmlns:domain="http://www.eurid.eu/xml/epp/domain-1.0" xsi:schemaLocation="http://www.eurid.eu/xml/epp/domain-1.0 domain-1.0.xsd"><domain:name>something.eu</domain:name></domain:transfer></transfer><extension><eurid:ext xmlns:eurid="http://www.eurid.eu/xml/epp/eurid-1.0" xsi:schemaLocation="http://www.eurid.eu/xml/epp/eurid-1.0 eurid-1.0.xsd"><eurid:cancel><eurid:reason>What the hell did I smoke?</eurid:reason></eurid:cancel></eurid:ext></extension><clTRID>TRID-0001</clTRID></command></epp>','domain_transfer_stop build');
 is($rc->is_success(),1,'domain_transfer_stop is_success');
+
+$R2 = $E1.'<response>' . r() . '<extension><eurid:ext><eurid:result>' .
+	'<eurid:msg>OK</eurid:msg></eurid:result></eurid:ext></extension>' .
+	$TRID . '</response>' . $E2;
+eval {
+	$rc = $dri->domain_transfer_accept('approveme.eu', {
+		auth => { pw => 'testpassword' }
+	});
+};
+if ($@)
+{
+	if (ref($@) eq 'Net::DRI::Exception')
+	{
+		die($@->as_string());
+	}
+	else
+	{
+		die($@);
+	}
+}
+is($R1,'<?xml version="1.0" encoding="UTF-8" standalone="no"?><epp xmlns="http://www.eurid.eu/xml/epp/epp-1.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.eurid.eu/xml/epp/epp-1.0 epp-1.0.xsd"><command><transfer op="approve"><domain:transfer xmlns:domain="http://www.eurid.eu/xml/epp/domain-1.0" xsi:schemaLocation="http://www.eurid.eu/xml/epp/domain-1.0 domain-1.0.xsd"><domain:name>approveme.eu</domain:name></domain:transfer></transfer><extension><eurid:ext xmlns:eurid="http://www.eurid.eu/xml/epp/eurid-1.0" xsi:schemaLocation="http://www.eurid.eu/xml/epp/eurid-1.0 eurid-1.0.xsd"><eurid:transfer><eurid:ownerAuthCode>testpassword</eurid:ownerAuthCode></eurid:transfer></eurid:ext></extension><clTRID>TRID-0001</clTRID></command></epp>','domain_transfer_accept build');
+is($rc->is_success(),1,'domain_transfer_accept is_success');
+
+$R2 = $E1.'<response>' . r() . '<extension><eurid:ext><eurid:result>' .
+	'<eurid:msg>OK</eurid:msg></eurid:result></eurid:ext></extension>' .
+	$TRID . '</response>' . $E2;
+eval {
+	$rc = $dri->domain_transfer_refuse('refuseme.eu', {
+		auth => { pw => 'testpassword' }
+	});
+};
+if ($@)
+{
+	if (ref($@) eq 'Net::DRI::Exception')
+	{
+		die($@->as_string());
+	}
+	else
+	{
+		die($@);
+	}
+}
+is($R1,'<?xml version="1.0" encoding="UTF-8" standalone="no"?><epp xmlns="http://www.eurid.eu/xml/epp/epp-1.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.eurid.eu/xml/epp/epp-1.0 epp-1.0.xsd"><command><transfer op="reject"><domain:transfer xmlns:domain="http://www.eurid.eu/xml/epp/domain-1.0" xsi:schemaLocation="http://www.eurid.eu/xml/epp/domain-1.0 domain-1.0.xsd"><domain:name>refuseme.eu</domain:name></domain:transfer></transfer><extension><eurid:ext xmlns:eurid="http://www.eurid.eu/xml/epp/eurid-1.0" xsi:schemaLocation="http://www.eurid.eu/xml/epp/eurid-1.0 eurid-1.0.xsd"><eurid:transfer><eurid:ownerAuthCode>testpassword</eurid:ownerAuthCode></eurid:transfer></eurid:ext></extension><clTRID>TRID-0001</clTRID></command></epp>','domain_transfer_refuse build');
+is($rc->is_success(),1,'domain_transfer_refuse is_success');
 
 
 ## p.70

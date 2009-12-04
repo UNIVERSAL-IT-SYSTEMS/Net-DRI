@@ -158,8 +158,6 @@ sub domain_operation_needs_is_mine
 
 ## Only transfer requests are possible
 sub domain_transfer_query   { Net::DRI::Exception->die(0,'DRD',4,'No domain transfer query available in .EU'); }
-sub domain_transfer_accept  { Net::DRI::Exception->die(0,'DRD',4,'No domain transfer approve available in .EU'); }
-sub domain_transfer_refuse  { Net::DRI::Exception->die(0,'DRD',4,'No domain transfer reject in .EU'); }
 sub domain_renew        { Net::DRI::Exception->die(0,'DRD',4,'No domain renew available in .EU'); }
 sub contact_check       { Net::DRI::Exception->die(0,'DRD',4,'No contact check available in .EU'); }
 sub contact_check_multi { Net::DRI::Exception->die(0,'DRD',4,'No contact check available in .EU'); }

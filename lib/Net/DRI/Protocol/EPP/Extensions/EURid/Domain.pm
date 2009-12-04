@@ -82,7 +82,9 @@ sub register_commands
 	  check             => [ \&check, \&check_parse ],
           delete            => [ \&delete, undef ],
           transfer_request  => [ \&transfer_request, undef ],
-          transfer_cancel     => [ \&transfer_cancel, undef ],
+          transfer_cancel   => [ \&transfer_cancel, undef ],
+          transfer_query    => [ \&transfer_query, undef ],
+          transfer_answer   => [ \&transfer_answer, undef ],
           undelete          => [ \&undelete, undef ],
           transferq_request => [ \&transferq_request, undef ],
           transferq_cancel  => [ \&transferq_cancel, undef ],
@@ -109,12 +111,21 @@ sub build_command_extension
  return $mes->command_extension_register($tag,sprintf('xmlns:eurid="%s" xsi:schemaLocation="%s %s"',$ns[0],$ns[0],$ns[1]));
 }
 
+sub verify_rd
+{
+ my ($rd, $key) = @_;
+ return 0 unless (defined($key) && $key);
+ return 0 unless (defined($rd) && (ref($rd) eq 'HASH') &&
+	exists($rd->{$key}) && defined($rd->{$key}));
+ return 1;
+}
+
 sub create
 {
  my ($epp,$domain,$rd)=@_;
  my $mes=$epp->message();
 
- return unless exists($rd->{nsgroup});
+ return unless verify_rd($rd, 'nsgroup');
  my @n=add_nsgroup($rd->{nsgroup});
 
  my $eid=build_command_extension($mes,$epp,'eurid:ext');
@@ -281,7 +292,7 @@ sub delete
  my ($epp,$domain,$rd)=@_;
  my $mes=$epp->message();
 
- return unless (exists($rd->{deleteDate}) && $rd->{deleteDate});
+ return unless (verify_rd($rd, 'deleteDate'));
 
  Net::DRI::Util::check_isa($rd->{deleteDate},'DateTime');
 
@@ -312,10 +323,52 @@ sub transfer_cancel
  my $mes = $epp->message();
  my @n;
 
- @n = ['eurid:reason', $rd->{reason}]
-	if (exists($rd->{reason}) && $rd->{reason});
+ # We must overwrite the command body here in case someone specified
+ # an authcode.
+ my @d = Net::DRI::Protocol::EPP::Core::Domain::build_command($mes,
+	['transfer', {op => 'cancel'}], $domain);
+ $mes->command_body(\@d);
+
+ @n = ['eurid:reason', $rd->{reason}] if (verify_rd($rd, 'reason'));
  my $eid = build_command_extension($mes, $epp, 'eurid:ext');
  $mes->command_extension($eid, ['eurid:cancel', @n]);
+}
+
+sub transfer_query
+{
+ my ($epp, $domain, $rd) = @_;
+ my $mes = $epp->message();
+ my @n;
+
+ # We must overwrite the command body here in case someone specified
+ # an authcode.
+ my @d = Net::DRI::Protocol::EPP::Core::Domain::build_command($mes,
+	['transfer', {op => 'query'}], $domain);
+ $mes->command_body(\@d);
+
+ my $eid = build_command_extension($mes, $epp, 'eurid:ext');
+ push(@n, ['eurid:ownerAuthCode', $rd->{auth}->{pw}])
+	if (verify_rd($rd, 'auth') && verify_rd($rd->{auth}, 'pw'));
+ $mes->command_extension($eid, ['eurid:transfer', @n]);
+}
+
+sub transfer_answer
+{
+ my ($epp, $domain, $rd) = @_;
+ my $mes = $epp->message();
+ my @n;
+
+ # We must overwrite the command body here in case someone specified
+ # an authcode.
+ my @d = Net::DRI::Protocol::EPP::Core::Domain::build_command($mes,
+	['transfer', {op => (verify_rd($rd, 'approve') && $rd->{approve} ?
+		'approve' : 'reject')}], $domain);
+ $mes->command_body(\@d);
+
+ my $eid = build_command_extension($mes, $epp, 'eurid:ext');
+ push(@n, ['eurid:ownerAuthCode', $rd->{auth}->{pw}])
+	if (verify_rd($rd, 'auth') && verify_rd($rd->{auth}, 'pw'));
+ $mes->command_extension($eid, ['eurid:transfer', @n]);
 }
 
 sub add_transfer
@@ -333,7 +386,7 @@ sub add_transfer
  Net::DRI::Exception::usererr_invalid_parameters('registrant must be a contact object or #AUTO#') unless (UNIVERSAL::isa($creg,'Net::DRI::Data::Contact') || (!ref($creg) && ($creg eq '#AUTO#')));
  push @n,['eurid:registrant',ref($creg)? $creg->srid() : '#AUTO#' ];
 
- if (exists($rd->{trDate}))
+ if (verify_rd($rd, 'trDate'))
  {
   Net::DRI::Util::check_isa($rd->{trDate},'DateTime');
   push @n,['eurid:trDate',$rd->{trDate}->set_time_zone('UTC')->strftime("%Y-%m-%dT%T.%NZ")];
@@ -346,7 +399,7 @@ sub add_transfer
  push @n,add_contact('tech',$cs,9) if $cs->has_type('tech');
  push @n,add_contact('onsite',$cs,5) if $cs->has_type('onsite');
 
- if (exists($rd->{ns}) && (UNIVERSAL::isa($rd->{ns},'Net::DRI::Data::Hosts')) && !$rd->{ns}->is_empty())
+ if (verify_rd($rd, 'ns') && (UNIVERSAL::isa($rd->{ns},'Net::DRI::Data::Hosts')) && !$rd->{ns}->is_empty())
  {
   my $n=Net::DRI::Protocol::EPP::Core::Domain::build_ns($epp,$rd->{ns},$domain,'eurid');
   my @ns=@{$mes->ns->{domain}};
@@ -354,11 +407,10 @@ sub add_transfer
   push @n,$n;
  }
 
- push @n,add_nsgroup($rd->{nsgroup}) if (exists($rd->{nsgroup}));
+ push @n,add_nsgroup($rd->{nsgroup}) if (verify_rd($rd, 'nsgroup'));
  push(@d, ['eurid:domain', @n]);
  push(@d, ['eurid:ownerAuthCode', $rd->{auth}->{pw}])
-	if (exists($rd->{auth}) && ref($rd->{auth}) eq 'HASH' &&
-	    exists($rd->{auth}->{pw}) && ref($rd->{auth}->{pw}) eq '');
+	if (verify_rd($rd, 'auth') && verify_rd($rd->{auth}, 'pw'));
  return @d;
 }
 
@@ -416,9 +468,24 @@ sub transferq_cancel
  $mes->command_body(\@d);
 
  my $eid = build_command_extension($mes,$epp,'eurid:ext');
- @n = ['eurid:reason', $rd->{reason}]
-	if (exists($rd->{reason}) && $rd->{reason});
+ @n = ['eurid:reason', $rd->{reason}] if (verify_rd($rd, 'reason'));
  $mes->command_extension($eid,['eurid:cancel',@n]);
+}
+
+sub transferq_query
+{
+ my ($epp, $domain, $rd) = @_;
+ my $mes = $epp->message();
+ my @d = Net::DRI::Protocol::EPP::Core::Domain::build_command($mes,
+	['transferq', {'op' => 'query'}], $domain);
+ my @n;
+
+ $mes->command_body(\@d);
+
+ my $eid = build_command_extension($mes, $epp, 'eurid:ext');
+ push(@n, ['eurid:ownerAuthCode', $rd->{auth}->{pw}])
+	if (verify_rd($rd, 'auth') && verify_rd($rd->{auth}, 'pw'));
+ $mes->command_extension($eid, ['eurid:transfer', @n]);
 }
 
 sub trade_request
@@ -444,8 +511,7 @@ sub trade_cancel
  $mes->command_body(\@d);
 
  my $eid=build_command_extension($mes, $epp, 'eurid:ext');
- @n = ['eurid:reason', $rd->{reason}]
-	if (exists($rd->{reason}) && $rd->{reason});
+ @n = ['eurid:reason', $rd->{reason}] if (verify_rd($rd, 'reason'));
  $mes->command_extension($eid, ['eurid:cancel', @n]);
 }
 

@@ -346,6 +346,7 @@ sub parse
   if ($msgq->hasChildNodes()) ## We will have childs only as a result of a poll request
   {
    my %d=( id => $id );
+   my $qdtag = $msgq->getElementsByTagNameNS($NS,'qDate')->shift();
    $self->msg_id($id);
    if (defined($qdtag) && defined($qdtag->firstChild()))
    {
@@ -359,14 +360,10 @@ sub parse
 	$qdtag->firstChild()->getData());
     }
    }
-   my $msgc=$msgq->getElementsByTagNameNS($NS,'msg')->shift();
-   $msgc=$res->getElementsByTagName('msg')->shift() unless (defined($msgc));
-   $msgc=$msg unless (defined($msgc));
-   $d{lang}=(defined($msgc)&&defined($msgc->getAttribute('lang'))?
-	$msgc->getAttribute('lang'):'en');
+   my $msgc=($msgq->getElementsByTagNameNS($NS,'msg'))[0];
+   $d{lang}=$msgc->getAttribute('lang') || 'en';
 
-   if (grep { $_->nodeType() == 1 && $_->nodeName() ne 'qDate' }
-	$msgc->childNodes())
+   if (grep { $_->nodeType() == 1 } $msgc->childNodes())
    {
     $self->node_msg($msgc);
    } else

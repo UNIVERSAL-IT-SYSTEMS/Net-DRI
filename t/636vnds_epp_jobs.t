@@ -35,7 +35,10 @@ eval {
 };
 print $@->as_string() if $@;
 $dri->{trid_factory} = sub { return 'ABC-12345'; };
-$dri->add_registry('VNDS');
+eval {
+	$dri->add_registry('VNDS');
+};
+print $@->as_string() if $@;
 eval {
 	$dri->target('VNDS')->new_current_profile('p1',
 		'Net::DRI::Transport::Dummy',

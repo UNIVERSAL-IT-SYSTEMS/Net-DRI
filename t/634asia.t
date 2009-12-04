@@ -4,7 +4,7 @@ use Net::DRI;
 use Net::DRI::Data::Raw;
 use Net::DRI::DRD::ICANN;
 
-use Test::More tests => 19;
+use Test::More tests => 21;
 
 eval { use Test::LongString max => 100; $Test::LongString::Context=50; };
 *{'main::is_string'} = \&main::is if $@;
@@ -199,6 +199,35 @@ if ($@)
 }
 is($rc->is_success(), 1, 'domain update success');
 is($R1, '<?xml version="1.0" encoding="UTF-8" standalone="no"?><epp xmlns="urn:ietf:params:xml:ns:epp-1.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="urn:ietf:params:xml:ns:epp-1.0 epp-1.0.xsd"><command><update><domain:update xmlns:domain="urn:ietf:params:xml:ns:domain-1.0" xsi:schemaLocation="urn:ietf:params:xml:ns:domain-1.0 domain-1.0.xsd"><domain:name>epptest.asia</domain:name></domain:update></update><extension><asia:create xmlns:asia="urn:afilias:params:xml:ns:asia-1.0" xsi:schemaLocation="urn:afilias:params:xml:ns:asia-1.0 asia-1.0.xsd"><asia:chg><asia:maintainerUrl>http://www.chezmoicamarche.com/</asia:maintainerUrl><asia:contact type="opn">C7-ASIA</asia:contact></asia:chg></asia:create></extension><clTRID>ABC-12345</clTRID></command></epp>', 'domain update xml');
+
+$R2 = $E1 . "<response><result code='1000'><msg lang='en-US'>Command completed successfully</msg></result>" . $TRID . '</response>' . $E2;
+
+$todo = $dri->local_object('changes');
+
+$cs = $dri->local_object('contactset');
+$cs->add($dri->local_object('contact')->srid('C5-ASIA'), 'opn');
+$todo->set('contact', $cs);
+
+$cs = $dri->local_object('contactset');
+$cs->add($dri->local_object('contact')->srid('C8-ASIA'), 'tech');
+$todo->add('contact', $cs);
+
+eval {
+	$rc = $dri->domain_update('epptest.asia', $todo);
+};
+if ($@)
+{
+	if (ref($@) eq 'Net::DRI::Exception')
+	{
+		die($@->as_string());
+	}
+	else
+	{
+		die($@);
+	}
+}
+is($rc->is_success(), 1, 'domain update success');
+is($R1, '<?xml version="1.0" encoding="UTF-8" standalone="no"?><epp xmlns="urn:ietf:params:xml:ns:epp-1.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="urn:ietf:params:xml:ns:epp-1.0 epp-1.0.xsd"><command><update><domain:update xmlns:domain="urn:ietf:params:xml:ns:domain-1.0" xsi:schemaLocation="urn:ietf:params:xml:ns:domain-1.0 domain-1.0.xsd"><domain:name>epptest.asia</domain:name><domain:add><domain:contact type="tech">C8-ASIA</domain:contact></domain:add></domain:update></update><extension><asia:create xmlns:asia="urn:afilias:params:xml:ns:asia-1.0" xsi:schemaLocation="urn:afilias:params:xml:ns:asia-1.0 asia-1.0.xsd"><asia:chg><asia:contact type="opn">C5-ASIA</asia:contact></asia:chg></asia:create></extension><clTRID>ABC-12345</clTRID></command></epp>', 'domain update xml');
 
 $R2 = $E1 . "<response><result code='1000'><msg lang='en-US'>Command completed successfully</msg></result><resData><domain:infData xmlns:domain='urn:ietf:params:xml:ns:domain-1.0' xsi:schemaLocation='urn:ietf:params:xml:ns:domain-1.0 domain-1.0.xsd'><domain:name>epptest23.asia</domain:name><domain:roid>U13423-ASIA</domain:roid><domain:status s='ok'/><domain:registrant>TL1-ASIA</domain:registrant><domain:contact type='billing'>TL1-ASIA</domain:contact><domain:contact type='tech'>TL1-ASIA</domain:contact><domain:contact type='admin'>JD1-ASIA</domain:contact><domain:ns><domain:hostObj>ns1.eppvalid.asia</domain:hostObj><domain:hostObj>ns2.eppvalid.asia</domain:hostObj><domain:hostObj>ns3.eppvalid.asia</domain:hostObj></domain:ns><domain:clID>client1</domain:clID><domain:crID>client1</domain:crID><domain:crDate>2007-11-09T08:48:08.0Z</domain:crDate><domain:upID>client1</domain:upID><domain:upDate>2008-04-28T09:45:15.0Z</domain:upDate><domain:exDate>2012-11-09T08:48:08.0Z</domain:exDate><domain:authInfo><domain:pw>blablabla</domain:pw></domain:authInfo></domain:infData></resData><extension><asia:infData xmlns:asia='urn:afilias:params:xml:ns:asia-1.0' xsi:schemaLocation='urn:afilias:params:xml:ns:asia-1.0 asia-1.0.xsd'><asia:maintainerUrl>http://www.justfuckinggoogleit.com/</asia:maintainerUrl><asia:contact type='opn'>TL1-ASIA</asia:contact><asia:contact type='regAgent'>YY1-ASIA</asia:contact><asia:contact type='ced'>JD1-ASIA</asia:contact></asia:infData><ipr:infData xmlns:ipr='urn:afilias:params:xml:ns:ipr-1.0' xsi:schemaLocation='urn:afilias:params:xml:ns:ipr-1.0 ipr-1.0.xsd'><ipr:appDate>2007-11-09</ipr:appDate><ipr:regDate>2007-11-09</ipr:regDate></ipr:infData></extension>" . $TRID . '</response>' . $E2;
 

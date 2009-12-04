@@ -102,6 +102,61 @@ sub transport_protocol_default
 
 }
 
+# We need to override this so we can do a simultaneous contact_add and _set
+sub domain_update
+{
+ my ($self, $ndr, $domain, $tochange, $rd) = @_;
+ my $fp = $ndr->protocol->nameversion();
+
+ err_invalid_domain_name($domain)
+  if $self->verify_name_domain($domain, 'update');
+ Net::DRI::Util::check_isa($tochange,'Net::DRI::Data::Changes');
+
+ Net::DRI::Exception->new(0, 'DRD', 4, 'Registry does not handle contacts')
+  if ($tochange->all_defined('contact') && ! $self->has_object('contact'));
+
+ foreach my $t ($tochange->types())
+ {
+  next if $ndr->protocol_capable('domain_update', $t);
+  Net::DRI::Exception->die(0, 'DRD', 5, "Protocol ${fp} is not capable of " .
+	"domain_update/${t}");
+ }
+
+ my %what = (
+	ns	=> [ $tochange->all_defined('ns') ],
+	status	=> [ $tochange->all_defined('status') ],
+	contact	=> [ $tochange->all_defined('contact') ]
+ );
+
+ foreach (@{$what{ns}})		{ Net::DRI::Util::check_isa($_,'Net::DRI::Data::Hosts'); }
+ foreach (@{$what{status}})	{ Net::DRI::Util::check_isa($_,'Net::DRI::Data::StatusList'); }
+ foreach (@{$what{contact}})	{ Net::DRI::Util::check_isa($_,'Net::DRI::Data::ContactSet'); }
+
+ foreach my $w (keys(%what))
+ {
+  my @s = @{$what{$w}};
+  next unless @s; ## no changes of that type
+
+  my $add = $tochange->add($w);
+  my $del = $tochange->del($w);
+  my $set = $tochange->set($w);
+
+  Net::DRI::Exception->die(0, 'DRD', 5, "Protocol ${fp} is not capable for " .
+	"domain_update/${w} to add") if (defined($add) &&
+	!$ndr->protocol_capable('domain_update', $w, 'add'));
+  Net::DRI::Exception->die(0, 'DRD', 5, "Protocol ${fp} is not capable for " .
+	"domain_update/${w} to del") if (defined($del) &&
+	!$ndr->protocol_capable('domain_update', $w, 'del'));
+  Net::DRI::Exception->die(0, 'DRD', 6, "Change domain_update/${w} with " .
+	"simultaneous set and add or del not supported")
+	if (defined($set) && (defined($add) || defined($del)) &&
+		${w} ne 'contact');
+ }
+
+ my $rc = $ndr->process('domain', 'update', [$domain, $tochange, $rd]);
+ return $rc;
+}
+
 ####################################################################################################
 
 sub verify_name_domain

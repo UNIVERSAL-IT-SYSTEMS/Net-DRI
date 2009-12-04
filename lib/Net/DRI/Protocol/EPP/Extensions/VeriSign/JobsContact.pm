@@ -128,7 +128,7 @@ sub info_parse
 {
 	my ($po,$otype,$oaction,$oname,$rinfo)=@_;
 	my $mes = $po->message();
-	my $jobNS = 'http://www.verisign.com/epp/dotJobs-1.0';
+	my $jobNS = 'http://www.verisign.com/epp/jobsContact-1.0';
 	my $infdata = $mes->get_content('infData', $jobNS, 1);
 	my $contact = $rinfo->{$otype}->{$oname}->{self};
 	my $jobinfo = +{

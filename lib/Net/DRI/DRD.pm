@@ -859,19 +859,19 @@ sub host_is_mine
 
 sub contact_create
 {
- my ($self,$ndr,$contact)=@_;
+ my ($self,$ndr,$contact,$rd)=@_;
  $self->err_invalid_contact($contact) unless Net::DRI::Util::isa_contact($contact);
  $contact->init('create') if $contact->can('init');
  $contact->validate(); ## will trigger an Exception if validation not ok
- my $rc=$ndr->process('contact','create',[$contact]);
+ my $rc=$ndr->process('contact','create',[$contact,$rd]);
  return $rc;
 }
 
 sub contact_delete
 {
- my ($self,$ndr,$contact)=@_;
+ my ($self,$ndr,$contact,$rd)=@_;
  $self->err_invalid_contact($contact) unless (Net::DRI::Util::isa_contact($contact) && $contact->srid());
- my $rc=$ndr->process('contact','delete',[$contact]);
+ my $rc=$ndr->process('contact','delete',[$contact,$rd]);
  return $rc;
 }
 
@@ -896,7 +896,7 @@ sub contact_info
 
 sub contact_check
 {
- my ($self,$ndr,$contact)=@_;
+ my ($self,$ndr,$contact,$rd)=@_;
  $self->err_invalid_contact($contact) unless (Net::DRI::Util::isa_contact($contact) && $contact->srid());
 
  my $rc;
@@ -906,7 +906,7 @@ sub contact_check
   $rc=$ndr->get_info('result_status');
  } else
  {
-  $rc=$ndr->process('contact','check',[$contact]);
+  $rc=$ndr->process('contact','check',[$contact,$rd]);
  }
  return $rc;
 }
@@ -936,17 +936,17 @@ sub contact_check_multi
 
 sub contact_exist ## 1/0/undef
 {
- my ($self,$ndr,$contact)=@_;
+ my ($self,$ndr,$contact,$rd)=@_;
  $self->err_invalid_contact($contact) unless (Net::DRI::Util::isa_contact($contact) && $contact->srid());
 
- my $rc=$ndr->contact_check($contact);
+ my $rc=$ndr->contact_check($contact,$rd);
  return unless $rc->is_success();
  return $ndr->get_info('exist');
 }
 
 sub contact_update
 {
- my ($self,$ndr,$contact,$tochange)=@_;
+ my ($self,$ndr,$contact,$tochange,$rd)=@_;
  my $fp=$ndr->protocol->nameversion();
 
  $self->err_invalid_contact($contact) unless (Net::DRI::Util::isa_contact($contact) && $contact->srid());
@@ -967,17 +967,17 @@ sub contact_update
 
  foreach ($tochange->all_defined('status')) { Net::DRI::Util::check_isa($_,'Net::DRI::Data::StatusList'); }
 
- my $rc=$ndr->process('contact','update',[$contact,$tochange]);
+ my $rc=$ndr->process('contact','update',[$contact,$tochange,$rd]);
  return $rc;
 }
 
-sub contact_update_status_add { my ($self,$ndr,$contact,$s)=@_; return $self->contact_update_status($ndr,$contact,$s,$ndr->local_object('status')); }
-sub contact_update_status_del { my ($self,$ndr,$contact,$s)=@_; return $self->contact_update_status($ndr,$contact,$ndr->local_object('status'),$s); }
-sub contact_update_status_set { my ($self,$ndr,$contact,$s)=@_; return $self->contact_update_status($ndr,$contact,$s); }
+sub contact_update_status_add { my ($self,$ndr,$contact,$s,$rd)=@_; return $self->contact_update_status($ndr,$contact,$s,$ndr->local_object('status'),$rd); }
+sub contact_update_status_del { my ($self,$ndr,$contact,$s,$rd)=@_; return $self->contact_update_status($ndr,$contact,$ndr->local_object('status'),$s,$rd); }
+sub contact_update_status_set { my ($self,$ndr,$contact,$s,$rd)=@_; return $self->contact_update_status($ndr,$contact,$s,undef,$rd); }
 
 sub contact_update_status
 {
- my ($self,$ndr,$contact,$sadd,$sdel)=@_;
+ my ($self,$ndr,$contact,$sadd,$sdel,$rd)=@_;
  Net::DRI::Util::check_isa($sadd,'Net::DRI::Data::StatusList');
  if (defined($sdel)) ## add + del
  {
@@ -988,44 +988,44 @@ sub contact_update_status
   return $self->contact_update($ndr,$contact,$c);
  } else
  {
-  return $self->contact_update($ndr,$contact,$ndr->local_object('changes')->set('status',$sadd));
+  return $self->contact_update($ndr,$contact,$ndr->local_object('changes')->set('status',$sadd),$rd);
  }
 }
 
 sub contact_transfer
 {
- my ($self,$ndr,$contact,$op)=@_;
+ my ($self,$ndr,$contact,$op,$rd)=@_;
  $self->err_invalid_contact($contact) unless (Net::DRI::Util::isa_contact($contact) && $contact->srid());
  Net::DRI::Exception::usererr_invalid_parameters('Transfer operation must be start,stop,accept,refuse or query') unless ($op=~m/^(?:start|stop|query|accept|refuse)$/);
 
  my $rc;
  if ($op eq 'start')
  {
-  $rc=$ndr->process('contact','transfer_request',[$contact]);
+  $rc=$ndr->process('contact','transfer_request',[$contact,$rd]);
  } elsif ($op eq 'stop')
  {
-  $rc=$ndr->process('contact','transfer_cancel',[$contact]);
+  $rc=$ndr->process('contact','transfer_cancel',[$contact,$rd]);
  } elsif ($op eq 'query')
  {
-  $rc=$ndr->process('contact','transfer_query',[$contact]);
+  $rc=$ndr->process('contact','transfer_query',[$contact,$rd]);
  } else ## accept/refuse
  {
-  $rc=$ndr->process('contact','transfer_answer',[$contact,($op eq 'accept')? 1 : 0]);
+  $rc=$ndr->process('contact','transfer_answer',[$contact,($op eq 'accept')? 1 : 0,$rd]);
  }
 
  return $rc;
 }
 
-sub contact_transfer_start   { my ($self,$ndr,$contact)=@_; return $self->contact_transfer($ndr,$contact,'start'); }
-sub contact_transfer_stop    { my ($self,$ndr,$contact)=@_; return $self->contact_transfer($ndr,$contact,'stop'); }
-sub contact_transfer_query   { my ($self,$ndr,$contact)=@_; return $self->contact_transfer($ndr,$contact,'query'); }
-sub contact_transfer_accept  { my ($self,$ndr,$contact)=@_; return $self->contact_transfer($ndr,$contact,'accept'); }
-sub contact_transfer_refuse  { my ($self,$ndr,$contact)=@_; return $self->contact_transfer($ndr,$contact,'refuse'); }
+sub contact_transfer_start   { my ($self,$ndr,$contact,$rd)=@_; return $self->contact_transfer($ndr,$contact,'start',$rd); }
+sub contact_transfer_stop    { my ($self,$ndr,$contact,$rd)=@_; return $self->contact_transfer($ndr,$contact,'stop',$rd); }
+sub contact_transfer_query   { my ($self,$ndr,$contact,$rd)=@_; return $self->contact_transfer($ndr,$contact,'query',$rd); }
+sub contact_transfer_accept  { my ($self,$ndr,$contact,$rd)=@_; return $self->contact_transfer($ndr,$contact,'accept',$rd); }
+sub contact_transfer_refuse  { my ($self,$ndr,$contact,$rd)=@_; return $self->contact_transfer($ndr,$contact,'refuse',$rd); }
 
 sub contact_current_status
 {
- my ($self,$ndr,$contact)=@_;
- my $rc=$self->contact_info($ndr,$contact);
+ my ($self,$ndr,$contact,$rd)=@_;
+ my $rc=$self->contact_info($ndr,$contact,$rd);
  return unless $rc->is_success();
  my $s=$ndr->get_info('status');
  return unless Net::DRI::Util::isa_statuslist($s);
@@ -1034,13 +1034,13 @@ sub contact_current_status
 
 sub contact_is_mine
 {
- my ($self,$ndr,$contact)=@_;
+ my ($self,$ndr,$contact,$rd)=@_;
  my $clid=$self->info('clid');
  return 0 unless defined($clid);
  my $id;
  eval
  {
-  my $rc=$self->contact_info($ndr,$contact);
+  my $rc=$self->contact_info($ndr,$contact,$rd);
   $id=$ndr->get_info('clID') if ($rc->is_success());
  };
  return 0 unless (!$@ && defined($id));

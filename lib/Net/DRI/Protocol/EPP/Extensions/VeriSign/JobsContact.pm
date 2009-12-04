@@ -135,7 +135,6 @@ sub info_parse
 	};
 	my $c;
 
-	warn('No infdata') unless (defined($infdata));
 	return unless (defined($infdata));
 
 	$c = $infdata->getElementsByTagNameNS($jobNS, 'title');
@@ -149,11 +148,11 @@ sub info_parse
 
 	$c = $infdata->getElementsByTagNameNS($jobNS, 'isAdminContact');
 	$jobinfo->{admin} = (lc($c->shift()->getFirstChild()->getData()) eq
-		'yes') if ($c);
+		'yes' ? 1 : 0) if ($c);
 
 	$c = $infdata->getElementsByTagNameNS($jobNS, 'isAssociationMember');
 	$jobinfo->{member} = (lc($c->shift()->getFirstChild()->getData()) eq
-		'yes') if ($c);
+		'yes' ? 1 : 0) if ($c);
 
 	$contact->jobinfo($jobinfo);
 }

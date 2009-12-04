@@ -5,7 +5,7 @@ use Net::DRI::Data::Raw;
 use DateTime::Duration;
 use Data::Dumper;
 
-use Test::More tests => 19;
+use Test::More tests => 29;
 
 eval { use Test::LongString max => 100; $Test::LongString::Context = 50; };
 *{'main::is_string'} = \&main::is if $@;
@@ -145,6 +145,30 @@ is($jobinfo->{website}, 'whois.example.com', 'contact query job website');
 is($jobinfo->{industry}, 'IT', 'contact query job industry');
 is($jobinfo->{admin}, 1, 'contact query job admin');
 is($jobinfo->{member}, 1, 'contact query job member');
+
+## Query a contact with corrected data
+$R2 = $E1 . '<response>' . r(1001,'Command completed successfully') .
+        '<resData><contact:infData xmlns:contact="urn:ietf:params:xml:ns:contact-1.0" xsi:schemaLocation="urn:ietf:params:xml:ns:contact-1.0 contact-1.0.xsd"><contact:id>sh4053</contact:id><contact:roid>4053_CONTACT-JOBS</contact:roid><contact:status s="ok"/><contact:postalInfo type="loc"><contact:name>Fourty Fifty-Three</contact:name><contact:org>SyGroup GmbH</contact:org><contact:addr><contact:street>Gueterstrasse 86</contact:street><contact:city>Basel</contact:city><contact:sp>Basel-Stadt</contact:sp><contact:pc>4053</contact:pc><contact:cc>CH</contact:cc></contact:addr></contact:postalInfo><contact:voice>+41.613338033</contact:voice><contact:fax>+41.613831467</contact:fax><contact:email>fourty.fifty-three@sygroup.ch</contact:email><contact:clID>SYREG</contact:clID><contact:crID>SYREG</contact:crID><contact:crDate>2008-01-01T01:01:01.0000Z</contact:crDate><contact:upID>SYREG</contact:upID><contact:upDate>2008-01-01T01:01:01.0000Z</contact:upDate><contact:authInfo><contact:pw>omnomnom</contact:pw></contact:authInfo></contact:infData></resData><extension><jobsContact:infData xmlns:jobsContact="http://www.verisign.com/epp/jobsContact-1.0" xsi:schemaLocation="http://www.verisign.com/epp/jobsContact-1.0 jobsContact-1.0.xsd"><jobsContact:website>http://www.sygroup.ch/</jobsContact:website><jobsContact:industryType>5</jobsContact:industryType><jobsContact:isAdminContact>No</jobsContact:isAdminContact></jobsContact:infData></extension>' . $TRID . '</response>' . $E2;
+
+eval {
+	$rc = $dri->contact_info($dri->local_object('contact')->srid('sh4053'));
+};
+print(STDERR $@->as_string()) if ($@);
+isa_ok($rc, 'Net::DRI::Protocol::ResultStatus');
+is($rc->is_success(), 1, 'contact query');
+is($R1, '<?xml version="1.0" encoding="UTF-8" standalone="no"?><epp xmlns="urn:ietf:params:xml:ns:epp-1.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="urn:ietf:params:xml:ns:epp-1.0 epp-1.0.xsd"><command><info><contact:info xmlns:contact="urn:ietf:params:xml:ns:contact-1.0" xsi:schemaLocation="urn:ietf:params:xml:ns:contact-1.0 contact-1.0.xsd"><contact:id>sh4053</contact:id></contact:info></info><extension><namestoreExt:namestoreExt xmlns:namestoreExt="http://www.verisign-grs.com/epp/namestoreExt-1.1" xsi:schemaLocation="http://www.verisign-grs.com/epp/namestoreExt-1.1 namestoreExt-1.1.xsd"><namestoreExt:subProduct>dotJOBS</namestoreExt:subProduct></namestoreExt:namestoreExt></extension><clTRID>ABC-12345</clTRID></command></epp>', 'contact query xml');
+
+$c = $dri->get_info('self', 'contact', 'sh4053');
+isa_ok($c, 'Net::DRI::Data::Contact::JOBS');
+
+$jobinfo = $c->jobinfo();
+
+isa_ok($jobinfo, 'HASH');
+is($jobinfo->{title}, undef, 'contact query job title');
+is($jobinfo->{website}, 'http://www.sygroup.ch/', 'contact query job website');
+is($jobinfo->{industry}, '5', 'contact query job industry');
+is($jobinfo->{admin}, 0, 'contact query job admin');
+is($jobinfo->{member}, undef, 'contact query job member');
 
 ############################################################################
 exit(0);

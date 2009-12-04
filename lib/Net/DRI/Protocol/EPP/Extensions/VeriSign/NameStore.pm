@@ -133,6 +133,8 @@ sub add_namestore_ext
  $ext='dotNET' if ($domain=~m/\.net$/i);
  $ext='dotCC' if ($domain=~m/\.cc$/i);
  $ext='dotTV' if ($domain=~m/\.tv$/i);
+ $ext='dotBZ' if ($domain=~m/\.bz$/i);
+ $ext='dotJOBS' if ($domain=~m/\.jobs$/i);
 
  $mes->command_extension($eid,['namestoreExt:subProduct',$ext]);
 }

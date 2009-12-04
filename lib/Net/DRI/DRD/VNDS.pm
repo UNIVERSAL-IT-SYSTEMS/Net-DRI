@@ -71,7 +71,7 @@ See the LICENSE file that comes with this distribution for more details.
 
 sub periods      { return map { DateTime::Duration->new(years => $_) } (1..10); }
 sub name         { return 'VNDS'; }
-sub tlds         { return ('com','net','cc','tv'); } ## If this changes, VeriSign/NameStore will need to be updated also
+sub tlds         { return ('com','net','cc','tv', 'bz', 'jobs'); } ## If this changes, VeriSign/NameStore will need to be updated also
 sub object_types { return ('domain','ns'); }
 
 sub transport_protocol_compatible 

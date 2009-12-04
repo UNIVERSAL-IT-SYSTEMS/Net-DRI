@@ -3,6 +3,9 @@
 use Net::DRI;
 use Net::DRI::Data::Raw;
 
+use DateTime;
+use DateTime::Duration;
+
 use Test::More tests => 19;
 eval { no warnings; require Test::LongString; Test::LongString->import(max => 100); $Test::LongString::Context=50; };
 *{'main::is_string'}=\&main::is if $@;
@@ -25,10 +28,25 @@ sub myrecv
  return Net::DRI::Data::Raw->new_from_string($R2? $R2 : $E1.'<response>'.r().$TRID.'</response>'.$E2);
 }
 
-my $dri=Net::DRI->new(10);
-$dri->{trid_factory}=sub { return 'ABC-12345'; };
-$dri->add_registry('CZ');
-$dri->target('CZ')->new_current_profile('p1', 'Net::DRI::Transport::Dummy', [{f_send => \&mysend, f_recv => \&myrecv}], 'Net::DRI::Protocol::EPP::Extensions::CZ', []);
+my $dri;
+
+eval {
+	$dri = Net::DRI->new(10);
+	$dri->{trid_factory} = sub { return 'ABC-12345'; };
+	$dri->add_registry('CZ');
+	$dri->target('CZ')->new_current_profile('p1', 'Net::DRI::Transport::Dummy', [{f_send => \&mysend, f_recv => \&myrecv}], 'Net::DRI::Protocol::EPP::Extensions::CZ', []);
+};
+if ($@)
+{
+	if (ref($@) eq 'Net::DRI::Exception')
+	{
+		die($@->as_string());
+	}
+	else
+	{
+		die($@);
+	}
+}
 
 my $rc;
 my $s;
@@ -139,6 +157,141 @@ is($rc->is_success(), 1, 'contact update success');
 is($R1, '<?xml version="1.0" encoding="UTF-8" standalone="no"?><epp xmlns="urn:ietf:params:xml:ns:epp-1.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="urn:ietf:params:xml:ns:epp-1.0 epp-1.0.xsd"><command><update><contact:update xmlns:contact="http://www.nic.cz/xml/epp/contact-1.4" xsi:schemaLocation="http://www.nic.cz/xml/epp/contact-1.4 contact-1.4.xsd"><contact:id>TL2-CZ</contact:id><contact:chg><contact:postalInfo><contact:addr><contact:street>Gueterstrasse 86</contact:street><contact:city>Basel</contact:city><contact:sp>BS</contact:sp></contact:addr></contact:postalInfo><contact:authInfo>bliblablu</contact:authInfo></contact:chg></contact:update></update><clTRID>ABC-12345</clTRID></command></epp>', 'contact update xml correct');
 
 ####################################################################################################
+## Domain operations
+
+## Domain create
+$R2 = $E1 . '<response><result code="1000"><msg>Command completed successfully</msg></result><resData><domain:creData xmlns:domain="http://www.nic.cz/xml/epp/domain-1.3" xsi:schemaLocation="http://www.nic.cz/xml/epp/domain-1.3 domain-1.3.xsd"><domain:name>sygroup.cz</domain:name><domain:crDate>2008-05-07T14:31:26+02:00</domain:crDate><domain:exDate>2009-05-07</domain:exDate></domain:creData></resData>' . $TRID . '</response>' . $E2;
+
+my $cs = $dri->local_object('contactset');
+$cs->add($dri->local_object('contact')->srid('SG1-CZ'), 'registrant');
+$cs->add($dri->local_object('contact')->srid('SK1-CZ'), 'admin');
+eval {
+	$rc = $dri->domain_create_only('sygroup.cz', {
+		contact =>	$cs,
+		duration =>	DateTime::Duration->new(years => 2),
+		auth =>		{ pw => 'yumyumyum' }
+	});
+};
+if ($@)
+{
+	if (ref($@) eq 'Net::DRI::Exception')
+	{
+		die($@->as_string());
+	}
+	else
+	{
+		die($@);
+	}
+}
+is($rc->is_success(), 1, 'domain create success');
+
+die('Error ' . $rc->code() . ': ' . $rc->message()) unless ($rc->is_success());
+is($R1, '<?xml version="1.0" encoding="UTF-8" standalone="no"?><epp xmlns="urn:ietf:params:xml:ns:epp-1.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="urn:ietf:params:xml:ns:epp-1.0 epp-1.0.xsd"><command><create><domain:create xmlns:domain="http://www.nic.cz/xml/epp/domain-1.3" xsi:schemaLocation="http://www.nic.cz/xml/epp/domain-1.3 domain-1.3.xsd"><domain:name>sygroup.cz</domain:name><domain:period unit="y">2</domain:period><domain:registrant>SG1-CZ</domain:registrant><domain:admin>SK1-CZ</domain:admin><domain:authInfo>yumyumyum</domain:authInfo></domain:create></create><clTRID>ABC-12345</clTRID></command>' . $E2, 'domain create xml correct');
+is($dri->get_info('crDate', 'domain', 'sygroup.cz'), '2008-05-07T14:31:26',
+	'domain create crdate');
+is($dri->get_info('exDate', 'domain', 'sygroup.cz'), '2009-05-07T00:00:00',
+	'domain create exdate');
+
+## Domain info
+$R2 = $E1 . '<response><result code="1000"><msg>Command completed successfully</msg></result><resData><domain:infData xmlns:domain="http://www.nic.cz/xml/epp/domain-1.3" xsi:schemaLocation="http://www.nic.cz/xml/epp/domain-1.3 domain-1.3.xsd"><domain:name>syhosting.cz</domain:name><domain:roid>D0000152990-CZ</domain:roid><domain:status s="outzone">Domain is not generated into zone</domain:status><domain:registrant>TK1-CZ</domain:registrant><domain:admin>TL1-CZ</domain:admin><domain:clID>REG-FRED_A</domain:clID><domain:crID>REG-FRED_A</domain:crID><domain:crDate>2008-05-07T14:31:26+02:00</domain:crDate><domain:exDate>2009-05-07</domain:exDate><domain:authInfo>gnagnagna</domain:authInfo></domain:infData></resData>' . $TRID . '</response>' . $E2;
+
+eval {
+	$rc = $dri->domain_info('syhosting.cz');
+};
+if ($@)
+{
+	if (ref($@) eq 'Net::DRI::Exception')
+	{
+		die($@->as_string());
+	}
+	else
+	{
+		die($@);
+	}
+}
+
+die('Error ' . $rc->code() . ': ' . $rc->message()) unless ($rc->is_success());
+is($R1, '<?xml version="1.0" encoding="UTF-8" standalone="no"?><epp xmlns="urn:ietf:params:xml:ns:epp-1.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="urn:ietf:params:xml:ns:epp-1.0 epp-1.0.xsd"><command><info><domain:info xmlns:domain="http://www.nic.cz/xml/epp/domain-1.3" xsi:schemaLocation="http://www.nic.cz/xml/epp/domain-1.3 domain-1.3.xsd"><domain:name>syhosting.cz</domain:name></domain:info></info><clTRID>ABC-12345</clTRID></command></epp>', 'domain info xml correct');
+
+is($dri->get_info('name', 'domain', 'syhosting.cz'), 'syhosting.cz',
+	'domain_info name');
+is($dri->get_info('roid', 'domain', 'syhosting.cz'), 'D0000152990-CZ',
+	'domain_info roid');
+$cs = $dri->get_info('contact', 'domain', 'syhosting.cz');
+is_deeply([$cs->types()], [qw(admin registrant)], 'domain_info contact types');
+is($cs->get('admin')->srid(), 'TL1-CZ', 'domain_info contact admin');
+is($cs->get('registrant')->srid(), 'TK1-CZ', 'domain_info contact registrant');
+is($dri->get_info('crDate', 'domain', 'syhosting.cz'), '2008-05-07T14:31:26',
+	'domain_info crDate');
+is($dri->get_info('crID', 'domain', 'syhosting.cz'), 'REG-FRED_A',
+	'domain_info crID');
+is($dri->get_info('exDate', 'domain', 'syhosting.cz'), '2009-05-07T00:00:00',
+	'domain_info exDate');
+is($dri->get_info('clID', 'domain', 'syhosting.cz'), 'REG-FRED_A',
+	'domain_info clID');
+is($dri->get_info('auth', 'domain', 'syhosting.cz')->{pw}, 'gnagnagna',
+	'domain_info auth');
+
+## Domain renew
+$R2 = $E1 . '<response><result code="1000"><msg>Command completed successfully</msg></result><resData><domain:renData xmlns:domain="http://www.nic.cz/xml/epp/domain-1.3" xsi:schemaLocation="http://www.nic.cz/xml/epp/domain-1.3 domain-1.3.xsd"><domain:name>sybla.cz</domain:name><domain:exDate>2010-05-07</domain:exDate></domain:renData></resData>' . $TRID . '</response>' . $E2;
+
+eval {
+	$rc = $dri->domain_renew('sybla.cz',
+		DateTime::Duration->new(years => 2),
+		DateTime->new(year => 2008, month => 5, day => 7));
+};
+if ($@)
+{
+	if (ref($@) eq 'Net::DRI::Exception')
+	{
+		die($@->as_string());
+	}
+	else
+	{
+		die($@);
+	}
+}
+
+die('Error ' . $rc->code() . ': ' . $rc->message()) unless ($rc->is_success());
+is($R1, '<?xml version="1.0" encoding="UTF-8" standalone="no"?><epp xmlns="urn:ietf:params:xml:ns:epp-1.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="urn:ietf:params:xml:ns:epp-1.0 epp-1.0.xsd"><command><renew><domain:renew xmlns:domain="http://www.nic.cz/xml/epp/domain-1.3" xsi:schemaLocation="http://www.nic.cz/xml/epp/domain-1.3 domain-1.3.xsd"><domain:name>sybla.cz</domain:name><domain:curExpDate>2008-05-07</domain:curExpDate><domain:period unit="y">2</domain:period></domain:renew></renew><clTRID>ABC-12345</clTRID></command></epp>', 'domain renew xml correct');
+
+is($dri->get_info('exDate', 'domain', 'sybla.cz'), '2010-05-07T00:00:00',
+	'domain_renew exDate');
+
+## Domain update
+$R2 = $E1 . '<response><result code="1000"><msg>Command completed successfully</msg></result>' . $TRID . '</response>' . $E2;
+
+$todo = $dri->local_object('changes');
+
+$cs = $dri->local_object('contactset');
+$cs->add($dri->local_object('contact')->srid('TL1-TZ'), 'admin');
+$todo->del('contact', $cs);
+
+$cs = $dri->local_object('contactset');
+$cs->add($dri->local_object('contact')->srid('DA1-TZ'), 'admin');
+$todo->add('contact', $cs);
+
+$todo->set('auth', { pw => 'coincoin' });
+
+eval {
+	$rc = $dri->domain_update('sybla.cz', $todo);
+};
+if ($@)
+{
+	if (ref($@) eq 'Net::DRI::Exception')
+	{
+		die($@->as_string());
+	}
+	else
+	{
+		die($@);
+	}
+}
+
+die('Error ' . $rc->code() . ': ' . $rc->message()) unless ($rc->is_success());
+is($R1, '<?xml version="1.0" encoding="UTF-8" standalone="no"?><epp xmlns="urn:ietf:params:xml:ns:epp-1.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="urn:ietf:params:xml:ns:epp-1.0 epp-1.0.xsd"><command><update><domain:update xmlns:domain="http://www.nic.cz/xml/epp/domain-1.3" xsi:schemaLocation="http://www.nic.cz/xml/epp/domain-1.3 domain-1.3.xsd"><domain:name>sybla.cz</domain:name><domain:add><domain:admin>DA1-TZ</domain:admin></domain:add><domain:rem><domain:admin>TL1-TZ</domain:admin></domain:rem><domain:chg><domain:authInfo>coincoin</domain:authInfo></domain:chg></domain:update></update><clTRID>ABC-12345</clTRID></command></epp>', 'domain renew xml correct');
+
+###############################################################################
 ## Registry Messages
 
 

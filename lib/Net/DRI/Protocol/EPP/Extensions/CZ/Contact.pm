@@ -124,11 +124,9 @@ sub info_parse
 	my ($po, $otype, $oaction, $oname, $rinfo) = @_;
 	my $mes = $po->message();
 
-	warn('Message was no success') unless $mes->is_success();
 	return unless $mes->is_success();
 
 	my $infdata = $mes->get_content('infData', $mes->ns('contact'), 0);
-	warn('No infData part found in ' . $mes->ns('contact')) unless $infdata;
 	return unless $infdata;
 
 	my $s = $rinfo->{contact}->{$oname}->{self};

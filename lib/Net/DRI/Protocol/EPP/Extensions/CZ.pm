@@ -79,6 +79,7 @@ sub new
 	($extrah)) : ());
 
  $e{'Net::DRI::Protocol::EPP::Extensions::CZ::Contact'} = 1;
+ $e{'Net::DRI::Protocol::EPP::Extensions::CZ::Domain'} = 1;
  $e{'Net::DRI::Protocol::EPP::Extensions::NSgroup'} = 1;
 
  ## we are now officially a Net::DRI::Protocol::EPP object
@@ -88,6 +89,9 @@ sub new
 	'domain-1.3.xsd'];
  $self->{ns}->{contact} = ['http://www.nic.cz/xml/epp/contact-1.4',
 	'contact-1.4.xsd'];
+
+ my $rcapa = $self->capabilities();
+ delete($rcapa->{domain_update}->{status});
 
  bless($self, $c); ## rebless
  return $self;

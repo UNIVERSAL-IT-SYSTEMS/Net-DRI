@@ -4,7 +4,7 @@ use Net::DRI;
 use Net::DRI::Data::Raw;
 use DateTime::Duration;
 
-use Test::More tests => 225;
+use Test::More tests => 231;
 eval { no warnings; require Test::LongString; Test::LongString->import(max => 100); $Test::LongString::Context=50; };
 *{'main::is_string'}=\&main::is if $@;
 
@@ -421,6 +421,29 @@ if ($@)
 is($R1,'<?xml version="1.0" encoding="UTF-8" standalone="no"?><epp xmlns="http://www.eurid.eu/xml/epp/epp-1.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.eurid.eu/xml/epp/epp-1.0 epp-1.0.xsd"><command><transfer op="reject"><domain:transfer xmlns:domain="http://www.eurid.eu/xml/epp/domain-1.0" xsi:schemaLocation="http://www.eurid.eu/xml/epp/domain-1.0 domain-1.0.xsd"><domain:name>refuseme.eu</domain:name></domain:transfer></transfer><extension><eurid:ext xmlns:eurid="http://www.eurid.eu/xml/epp/eurid-1.0" xsi:schemaLocation="http://www.eurid.eu/xml/epp/eurid-1.0 eurid-1.0.xsd"><eurid:transfer><eurid:ownerAuthCode>testpassword</eurid:ownerAuthCode></eurid:transfer></eurid:ext></extension><clTRID>TRID-0001</clTRID></command></epp>','domain_transfer_refuse build');
 is($rc->is_success(),1,'domain_transfer_refuse is_success');
 
+# FIXME: response bogus, must figure out what the registry would respond
+$R2 = $E1.'<response>' . r() . '<extension><eurid:ext><eurid:result>' .
+	'<eurid:msg>OK</eurid:msg></eurid:result></eurid:ext></extension>' .
+	$TRID . '</response>' . $E2;
+eval {
+	$rc = $dri->domain_transfer_query('refuseme.eu', {
+		auth => { pw => 'testpassword' }
+	});
+};
+if ($@)
+{
+	if (ref($@) eq 'Net::DRI::Exception')
+	{
+		die($@->as_string());
+	}
+	else
+	{
+		die($@);
+	}
+}
+is($R1,'<?xml version="1.0" encoding="UTF-8" standalone="no"?><epp xmlns="http://www.eurid.eu/xml/epp/epp-1.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.eurid.eu/xml/epp/epp-1.0 epp-1.0.xsd"><command><transfer op="query"><domain:transfer xmlns:domain="http://www.eurid.eu/xml/epp/domain-1.0" xsi:schemaLocation="http://www.eurid.eu/xml/epp/domain-1.0 domain-1.0.xsd"><domain:name>refuseme.eu</domain:name></domain:transfer></transfer><extension><eurid:ext xmlns:eurid="http://www.eurid.eu/xml/epp/eurid-1.0" xsi:schemaLocation="http://www.eurid.eu/xml/epp/eurid-1.0 eurid-1.0.xsd"><eurid:transfer><eurid:ownerAuthCode>testpassword</eurid:ownerAuthCode></eurid:transfer></eurid:ext></extension><clTRID>TRID-0001</clTRID></command></epp>','domain_transfer_query build');
+is($rc->is_success(),1,'domain_transfer_query is_success');
+
 
 ## p.70
 $R2=$E1.'<response>'.r().'<extension><eurid:ext><eurid:result><eurid:msg>Content check ok</eurid:msg></eurid:result></eurid:ext></extension>'.$TRID.'</response>'.$E2;
@@ -486,6 +509,27 @@ if ($@)
 }
 is_string($R1,'<?xml version="1.0" encoding="UTF-8" standalone="no"?><epp xmlns="http://www.eurid.eu/xml/epp/epp-1.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.eurid.eu/xml/epp/epp-1.0 epp-1.0.xsd"><command><transferq op="reject"><domain:transferq xmlns:domain="http://www.eurid.eu/xml/epp/domain-1.0" xsi:schemaLocation="http://www.eurid.eu/xml/epp/domain-1.0 domain-1.0.xsd"><domain:name>puppetdomain.eu</domain:name></domain:transferq></transferq><extension><eurid:ext xmlns:eurid="http://www.eurid.eu/xml/epp/eurid-1.0" xsi:schemaLocation="http://www.eurid.eu/xml/epp/eurid-1.0 eurid-1.0.xsd"><eurid:transfer><eurid:ownerAuthCode>testbuzzword</eurid:ownerAuthCode></eurid:transfer></eurid:ext></extension><clTRID>TRID-0001</clTRID></command></epp>','domain_transferq_refuse build');
 is($rc->is_success(), 1, 'domain_transferq_refuse is_success');
+
+# FIXME: response bogus, must figure out what the registry would respond
+$R2 = $E1.'<response>'.r().'<extension><eurid:ext><eurid:result><eurid:msg>Content check ok</eurid:msg></eurid:result></eurid:ext></extension>'.$TRID.'</response>'.$E2;
+eval {
+	$rc = $ro->transferq_query('puppetdomain.eu', {
+		auth => { pw => 'testbuzzword' }
+	});
+};
+if ($@)
+{
+	if (ref($@) eq 'Net::DRI::Exception')
+	{
+		die($@->as_string());
+	}
+	else
+	{
+		die($@);
+	}
+}
+is_string($R1,'<?xml version="1.0" encoding="UTF-8" standalone="no"?><epp xmlns="http://www.eurid.eu/xml/epp/epp-1.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.eurid.eu/xml/epp/epp-1.0 epp-1.0.xsd"><command><transferq op="query"><domain:transferq xmlns:domain="http://www.eurid.eu/xml/epp/domain-1.0" xsi:schemaLocation="http://www.eurid.eu/xml/epp/domain-1.0 domain-1.0.xsd"><domain:name>puppetdomain.eu</domain:name></domain:transferq></transferq><extension><eurid:ext xmlns:eurid="http://www.eurid.eu/xml/epp/eurid-1.0" xsi:schemaLocation="http://www.eurid.eu/xml/epp/eurid-1.0 eurid-1.0.xsd"><eurid:transfer><eurid:ownerAuthCode>testbuzzword</eurid:ownerAuthCode></eurid:transfer></eurid:ext></extension><clTRID>TRID-0001</clTRID></command></epp>','domain_transferq_query build');
+is($rc->is_success(), 1, 'domain_transferq_query is_success');
 
 
 ## p.72
@@ -578,6 +622,27 @@ if ($@)
 }
 is($R1,'<?xml version="1.0" encoding="UTF-8" standalone="no"?><epp xmlns="http://www.eurid.eu/xml/epp/epp-1.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.eurid.eu/xml/epp/epp-1.0 epp-1.0.xsd"><command><trade op="reject"><domain:trade xmlns:domain="http://www.eurid.eu/xml/epp/domain-1.0" xsi:schemaLocation="http://www.eurid.eu/xml/epp/domain-1.0 domain-1.0.xsd"><domain:name>fux.eu</domain:name></domain:trade></trade><extension><eurid:ext xmlns:eurid="http://www.eurid.eu/xml/epp/eurid-1.0" xsi:schemaLocation="http://www.eurid.eu/xml/epp/eurid-1.0 eurid-1.0.xsd"><eurid:transfer><eurid:ownerAuthCode>testbuzzword</eurid:ownerAuthCode></eurid:transfer></eurid:ext></extension><clTRID>TRID-0001</clTRID></command></epp>', 'domain_trade_refuse build');
 is($rc->is_success(), 1, 'domain_trade_refuse build');
+
+# FIXME: response bogus, must figure out what the registry would respond
+$R2 = $E1 . '<response>' . r() . '<extension><eurid:ext><eurid:result><eurid:msg>OK</eurid:msg></eurid:result></eurid:ext></extension>' . $TRID . '</response>' . $E2;
+eval {
+	$rc = $ro->trade_query('fux.eu', {
+		auth =>	{ pw => 'testbuzzword' }
+	});
+};
+if ($@)
+{
+	if (ref($@) eq 'Net::DRI::Exception')
+	{
+		die($@->as_string());
+	}
+	else
+	{
+		die($@);
+	}
+}
+is($R1,'<?xml version="1.0" encoding="UTF-8" standalone="no"?><epp xmlns="http://www.eurid.eu/xml/epp/epp-1.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.eurid.eu/xml/epp/epp-1.0 epp-1.0.xsd"><command><trade op="query"><domain:trade xmlns:domain="http://www.eurid.eu/xml/epp/domain-1.0" xsi:schemaLocation="http://www.eurid.eu/xml/epp/domain-1.0 domain-1.0.xsd"><domain:name>fux.eu</domain:name></domain:trade></trade><extension><eurid:ext xmlns:eurid="http://www.eurid.eu/xml/epp/eurid-1.0" xsi:schemaLocation="http://www.eurid.eu/xml/epp/eurid-1.0 eurid-1.0.xsd"><eurid:transfer><eurid:ownerAuthCode>testbuzzword</eurid:ownerAuthCode></eurid:transfer></eurid:ext></extension><clTRID>TRID-0001</clTRID></command></epp>', 'domain_trade_query build');
+is($rc->is_success(), 1, 'domain_trade_query build');
 
 
 ## p.74

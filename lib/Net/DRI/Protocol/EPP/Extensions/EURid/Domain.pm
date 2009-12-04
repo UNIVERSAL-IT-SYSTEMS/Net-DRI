@@ -356,7 +356,8 @@ sub transfer_query
 
  my $eid = build_command_extension($mes, $epp, 'eurid:ext');
  push(@n, ['eurid:ownerAuthCode', $rd->{auth}->{pw}])
-	if (verify_rd($rd, 'auth') && verify_rd($rd->{auth}, 'pw'));
+	if (verify_rd($rd, 'auth') && verify_rd($rd->{auth}, 'pw') &&
+	length($rd->{auth}->{pw}));
  $mes->command_extension($eid, ['eurid:transfer', @n]);
 }
 
@@ -375,7 +376,8 @@ sub transfer_answer
 
  my $eid = build_command_extension($mes, $epp, 'eurid:ext');
  push(@n, ['eurid:ownerAuthCode', $rd->{auth}->{pw}])
-	if (verify_rd($rd, 'auth') && verify_rd($rd->{auth}, 'pw'));
+	if (verify_rd($rd, 'auth') && verify_rd($rd->{auth}, 'pw') &&
+		length($rd->{auth}->{pw}));
  $mes->command_extension($eid, ['eurid:transfer', @n]);
 }
 
@@ -418,7 +420,8 @@ sub add_transfer
  push @n,add_nsgroup($rd->{nsgroup}) if (verify_rd($rd, 'nsgroup'));
  push(@d, ['eurid:domain', @n]);
  push(@d, ['eurid:ownerAuthCode', $rd->{auth}->{pw}])
-	if (verify_rd($rd, 'auth') && verify_rd($rd->{auth}, 'pw'));
+	if (verify_rd($rd, 'auth') && verify_rd($rd->{auth}, 'pw') &&
+		length($rd->{auth}->{pw}));
  return @d;
 }
 
@@ -492,7 +495,8 @@ sub transferq_query
 
  my $eid = build_command_extension($mes, $epp, 'eurid:ext');
  push(@n, ['eurid:ownerAuthCode', $rd->{auth}->{pw}])
-	if (verify_rd($rd, 'auth') && verify_rd($rd->{auth}, 'pw'));
+	if (verify_rd($rd, 'auth') && verify_rd($rd->{auth}, 'pw') &&
+		length($rd->{auth}->{pw}));
  $mes->command_extension($eid, ['eurid:transfer', @n]);
 }
 
@@ -510,7 +514,8 @@ sub transferq_query
 
  my $eid = build_command_extension($mes,$epp,'eurid:ext');
  push(@n, ['eurid:ownerAuthCode', $rd->{auth}->{pw}])
-	if (verify_rd($rd, 'auth') && verify_rd($rd->{auth}, 'pw'));
+	if (verify_rd($rd, 'auth') && verify_rd($rd->{auth}, 'pw') &&
+		length($rd->{auth}->{pw}));
  $mes->command_extension($eid,['eurid:transfer',@n]);
 }
 
@@ -529,7 +534,8 @@ sub transferq_answer
 
  my $eid = build_command_extension($mes,$epp,'eurid:ext');
  push(@n, ['eurid:ownerAuthCode', $rd->{auth}->{pw}])
-	if (verify_rd($rd, 'auth') && verify_rd($rd->{auth}, 'pw'));
+	if (verify_rd($rd, 'auth') && verify_rd($rd->{auth}, 'pw') &&
+		length($rd->{auth}->{pw}));
  $mes->command_extension($eid,['eurid:transfer',@n]);
 }
 
@@ -587,7 +593,8 @@ sub trade_answer
 
  my $eid=build_command_extension($mes, $epp, 'eurid:ext');
  push(@n, ['eurid:ownerAuthCode', $rd->{auth}->{pw}])
-	if (verify_rd($rd, 'auth') && verify_rd($rd->{auth}, 'pw'));
+	if (verify_rd($rd, 'auth') && verify_rd($rd->{auth}, 'pw') &&
+		length($rd->{auth}->{pw}));
  $mes->command_extension($eid, ['eurid:transfer', @n]);
 }
 
@@ -617,7 +624,8 @@ sub trade_query
 
  my $eid=build_command_extension($mes, $epp, 'eurid:ext');
  push(@n, ['eurid:ownerAuthCode', $rd->{auth}->{pw}])
-	if (verify_rd($rd, 'auth') && verify_rd($rd->{auth}, 'pw'));
+	if (verify_rd($rd, 'auth') && verify_rd($rd->{auth}, 'pw') &&
+		length($rd->{auth}->{pw}));
  $mes->command_extension($eid, ['eurid:transfer', @n]);
 }
 

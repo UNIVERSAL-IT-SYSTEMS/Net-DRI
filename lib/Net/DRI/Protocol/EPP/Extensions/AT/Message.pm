@@ -163,41 +163,49 @@ sub parse_poll
  return unless (@tags);
  $ext = $tags[0];
 
- @tags = $ext->getElementsByTagNameNS($resNS, 'conditions');
- return unless (@tags);
- $ctag = $tags[0];
-
- @tags = $ctag->getElementsByTagNameNS($resNS, 'condition');
-
- foreach my $cond (@tags)
+ foreach my $node ($ext->childNodes())
  {
-  my %con;
-  my $c = $cond->getFirstChild();
+  my $name = $node->localName || $node->nodeName;
 
-  $con{code} = $cond->getAttribute('code') if ($cond->getAttribute('code'));
-  $con{severity} = $cond->getAttribute('severity') if ($cond->getAttribute('severity'));
-
-  while ($c)
+  if ($name eq 'conditions')
   {
-   next unless ($c->nodeType() == 1); ## only for element nodes
-   my $name = $c->localname() || $c->nodeName();
-   next unless $name;
+   @tags = $node->getElementsByTagNameNS($resNS, 'condition');
 
-   if ($name =~ m/^(msg|details)$/)
+   foreach my $cond (@tags)
    {
-    $con{$1} = $c->getFirstChild()->getData();
-   }
-   elsif ($name eq 'attributes')
-   {
-    foreach my $attr ($c->getChildrenByTagNameNS($NS,'attr'))
+    my %con;
+    my $c = $cond->getFirstChild();
+
+    $con{code} = $cond->getAttribute('code') if ($cond->getAttribute('code'));
+    $con{severity} = $cond->getAttribute('severity') if ($cond->getAttribute('severity'));
+
+    while ($c)
     {
-     my $attrname = $attr->getAttribute('name');
-     $con{'attr ' . $attrname} = $attr->getFirstChild()->getData();
-    }
-   }
-  } continue { $c = $c->getNextSibling(); }
+     next unless ($c->nodeType() == 1); ## only for element nodes
+     my $cname = $c->localname() || $c->nodeName();
+     next unless $cname;
 
-  push(@conds, \%con);
+     if ($cname =~ m/^(msg|details)$/)
+     {
+      $con{$1} = $c->getFirstChild()->getData();
+     }
+     elsif ($cname eq 'attributes')
+     {
+      foreach my $attr ($c->getChildrenByTagNameNS($NS,'attr'))
+      {
+       my $attrname = $attr->getAttribute('name');
+       $con{'attr ' . $attrname} = $attr->getFirstChild()->getData();
+      }
+     }
+    } continue { $c = $c->getNextSibling(); }
+
+    push(@conds, \%con);
+   }
+  }
+  elsif ($name eq 'keydate')
+  {
+   $rinfo->{message}->{$msgid}->{keydate} = $node->getFirstChild()->getData();
+  }
  }
 
  $rinfo->{message}->{$msgid}->{conditions} = \@conds;

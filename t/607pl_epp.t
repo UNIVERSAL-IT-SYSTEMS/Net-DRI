@@ -31,8 +31,21 @@ sub r
 
 my $dri=Net::DRI->new(10);
 $dri->{trid_factory}=sub { return 'ABC-12345'; };
+eval {
 $dri->add_registry('PL');
 $dri->target('PL')->new_current_profile('p1','Net::DRI::Transport::Dummy',[{f_send=>\&mysend,f_recv=>\&myrecv}],'Net::DRI::Protocol::EPP::Extensions::PL',[]);
+};
+if ($@)
+{
+	if (ref($@))
+	{
+		die($@->as_string());
+	}
+	else
+	{
+		die($@);
+	}
+}
 my ($rc,$d,$co,$dh,@c);
 
 ####################################################################################################
@@ -45,8 +58,21 @@ $R2=$E1.'<response>'.r().'<resData><domain:creData xmlns:domain="urn:ietf:params
 $dh=$dri->local_object('hosts');
 $dh->add('ns.przyklad2.pl');
 $dh->add('ns5.przyklad.pl');
-$rc=$dri->domain_create_only('przyklad44.pl',{ns=>$dh,auth=>{pw=>'authinfo_of_d97'},book=>1,reason=>'nice name'});
-is($R1,'<?xml version="1.0" encoding="UTF-8" standalone="no"?><epp xmlns="urn:ietf:params:xml:ns:epp-1.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="urn:ietf:params:xml:ns:epp-1.0 epp-1.0.xsd"><command><create><domain:create xmlns:domain="urn:ietf:params:xml:ns:domain-1.0" xsi:schemaLocation="urn:ietf:params:xml:ns:domain-1.0 domain-1.0.xsd"><domain:name>przyklad44.pl</domain:name><domain:ns><domain:hostObj>ns.przyklad2.pl</domain:hostObj><domain:hostObj>ns5.przyklad.pl</domain:hostObj></domain:ns><domain:authInfo><domain:pw>authinfo_of_d97</domain:pw></domain:authInfo></domain:create></create><extension><extdom:create xmlns:extdom="http://www.dns.pl/NASK-EPP/extdom-1.0" xsi:schemaLocation="http://www.dns.pl/NASK-EPP/extdom-1.0 extdom-1.0.xsd"><extdom:reason>nice name</extdom:reason><extdom:book/></extdom:create></extension><clTRID>ABC-12345</clTRID></command></epp>','domain_create build with book');
+eval {
+	$rc=$dri->domain_create_only('przyklad44.pl',{ns=>$dh,auth=>{pw=>'authinfo_of_d97'},book=>1,reason=>'nice name'});
+};
+if ($@)
+{
+	if (ref($@))
+	{
+		die($@->as_string());
+	}
+	else
+	{
+		die($@);
+	}
+}
+is($R1,'<?xml version="1.0" encoding="UTF-8" standalone="no"?><epp xmlns="urn:ietf:params:xml:ns:epp-1.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="urn:ietf:params:xml:ns:epp-1.0 epp-1.0.xsd"><command><create><domain:create xmlns:domain="urn:ietf:params:xml:ns:domain-1.0" xsi:schemaLocation="urn:ietf:params:xml:ns:domain-1.0 domain-1.0.xsd"><domain:name>przyklad44.pl</domain:name><domain:ns>ns.przyklad2.pl</domain:ns><domain:ns>ns5.przyklad.pl</domain:ns><domain:authInfo><domain:pw>authinfo_of_d97</domain:pw></domain:authInfo></domain:create></create><extension><extdom:create xmlns:extdom="http://www.dns.pl/NASK-EPP/extdom-1.0" xsi:schemaLocation="http://www.dns.pl/NASK-EPP/extdom-1.0 extdom-1.0.xsd"><extdom:reason>nice name</extdom:reason><extdom:book/></extdom:create></extension><clTRID>ABC-12345</clTRID></command></epp>','domain_create build with book');
 
 is($rc->is_success(),1,'domain_create is_success');
 $d=$dri->get_info('crDate');

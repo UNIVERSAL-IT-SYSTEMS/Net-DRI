@@ -157,7 +157,7 @@ sub get_data
   }
  }
 
- die(Net::DRI::Protocol::ResultStatus->new_error('COMMAND_SYNTAX_ERROR',$m? $m : '<empty message from server>','en')) unless ($m=~m!</epp>$!);
+ die(Net::DRI::Protocol::ResultStatus->new_error('COMMAND_SYNTAX_ERROR',$m? $m : '<empty message from server>','en')) unless ($m=~m!</epp>\r?$!);
 
  return Net::DRI::Data::Raw->new_from_string($m);
 }

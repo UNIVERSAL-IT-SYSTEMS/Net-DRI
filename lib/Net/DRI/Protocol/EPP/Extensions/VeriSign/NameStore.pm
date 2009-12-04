@@ -96,8 +96,19 @@ sub register_commands
            update       => [ \&add_namestore_ext, \&parse_error ],
          );
  
+ # contact functions
+ my %tmpContact = (
+           create       => [ \&add_namestore_ext, \&parse_error ],
+           check        => [ \&add_namestore_ext, \&parse ],
+           check_multi  => [ \&add_namestore_ext, \&parse ],
+           info         => [ \&add_namestore_ext, \&parse_error ],
+           delete       => [ \&add_namestore_ext, \&parse_error ],
+           update       => [ \&add_namestore_ext, \&parse_error ],
+         );
+ 
  return { 'domain' => \%tmpDomain,
           'host'   => \%tmpHost,
+	  'contact' => \%tmpContact
         };
 }
 

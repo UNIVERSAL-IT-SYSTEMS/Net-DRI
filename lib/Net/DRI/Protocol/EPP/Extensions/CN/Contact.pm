@@ -1,6 +1,7 @@
 ## Domain Registry Interface, CN Contact extension
 ##
-## Copyright (c) 2006,2007 Patrick Mevzek <netdri@dotandco.com>. All rights reserved.
+## Copyright (c) 2008 Tonnerre Lombard <tonnerre.lombard@sygroup.ch>.
+##                    All rights reserved.
 ##
 ## This file is part of Net::DRI
 ##
@@ -30,7 +31,7 @@ our $VERSION=do { my @r=(q$Revision: 1.2 $=~/\d+/g); sprintf("%d".".%02d" x $#r,
 
 =head1 NAME
 
-Net::DRI::Protocol::EPP::Extensions::AT::Contact - NIC.AT Contact Extensions for Net::DRI
+Net::DRI::Protocol::EPP::Extensions::CN::Contact - .CN Contact Extensions for Net::DRI
 
 =head1 DESCRIPTION
 
@@ -40,7 +41,7 @@ Please see the README file for details.
 
 For now, support questions should be sent to:
 
-E<lt>netdri@dotandco.comE<gt>
+E<lt>development@sygroup.chE<gt>
 
 Please also see the SUPPORT file in the distribution.
 
@@ -50,11 +51,11 @@ E<lt>http://www.dotandco.com/services/software/Net-DRI/E<gt>
 
 =head1 AUTHOR
 
-Patrick Mevzek, E<lt>netdri@dotandco.comE<gt>
+Tonnerre Lombard, E<lt>tonnerre.lombard@sygroup.chE<gt>
 
 =head1 COPYRIGHT
 
-Copyright (c) 2006,2007 Patrick Mevzek <netdri@dotandco.com>.
+Copyright (c) 2008 Tonnerre Lombard <tonnerre.lombard@sygroup.ch>.
 All rights reserved.
 
 This program is free software; you can redistribute it and/or modify

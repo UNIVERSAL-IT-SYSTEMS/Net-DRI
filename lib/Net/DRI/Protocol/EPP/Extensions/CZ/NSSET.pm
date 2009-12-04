@@ -264,12 +264,16 @@ sub info_parse
 {
 	my ($po, $otype, $oaction, $oname, $rinfo) = @_;
 	my $mes = $po->message();
+	my @s;
 	return unless $mes->is_success();
 
 	my $infdata = $mes->get_content('infData', ns($mes));
 	return unless $infdata;
 
 	my $ns = Net::DRI::Data::Hosts->new();
+	my $pd = DateTime::Format::ISO8601->new();
+	my $cf = $po->factories()->{contact};
+	my $cs = Net::DRI::Data::ContactSet->new();
 
 	my $c = $infdata->getFirstChild();
 
@@ -278,20 +282,78 @@ sub info_parse
 		next unless ($c->nodeType() == 1); ## only for element nodes
 		my $name = $c->localname() || $c->nodeName();
 		next unless $name;
-		if ($name eq 'name')
+		if ($name eq 'id')
 		{
 			$oname = $c->getFirstChild()->getData();
-			$ns->name($oname);
+			$rinfo->{nsset}->{$oname}->{name} =
+				$rinfo->{nsset}->{$oname}->{id} = $oname;
 			$rinfo->{nsset}->{$oname}->{exist} = 1;
 			$rinfo->{nsset}->{$oname}->{action} = 'info';
 		}
+		elsif ($name eq 'roid')
+		{
+			$rinfo->{nsset}->{$oname}->{roid} = $c->getFirstChild()
+				->getData();
+		}
+		elsif ($name eq 'reportlevel')
+		{
+			$rinfo->{nsset}->{$oname}->{reportlevel} =
+				int($c->getFirstChild()->getData());
+		}
+		elsif ($name eq 'status')
+		{
+			push(@s, Net::DRI::Protocol::EPP::parse_status($c));
+		}
+		elsif ($name eq 'authInfo')
+		{
+			$rinfo->{nsset}->{$oname}->{auth} =
+				{ pw => $c->getFirstChild()->getData() };
+		}
+		elsif ($name =~ /^((?:c[lr]|tr|up)ID)$/)
+		{
+			$rinfo->{nsset}->{$oname}->{$1} =
+				$c->getFirstChild()->getData();
+		}
+		elsif ($name =~ /^((?:c[lr]|tr|up)Date)$/)
+		{
+			$rinfo->{nsset}->{$oname}->{$1} = $pd->parse_datetime(
+				$c->getFirstChild()->getData());
+		}
 		elsif ($name eq 'ns')
 		{
-			$ns->add($c->getFirstChild()->getData());
+			my $hostname;
+			my @v4;
+			my @v6;
+			foreach my $xname ($c->getElementsByTagNameNS(ns($mes),
+				'name'))
+			{
+				$hostname = $xname->getFirstChild()->getData();
+			}
+			foreach my $xaddr ($c->getElementsByTagNameNS(ns($mes),
+				'addr'))
+			{
+				my $xa = $xaddr->getFirstChild()->getData();
+				if ($xa =~ /^\d+\.\d+\.\d+\.\d+$/)
+				{
+					push(@v4, $xa);
+				}
+				else
+				{
+					push(@v6, $xa);
+				}
+			}
+			$ns->add($hostname, \@v4, \@v6);
+		}
+		elsif ($name =~ /^(registrant|billing|admin|tech)$/)
+		{
+			$cs->add($cf->()->srid($c->getFirstChild()->getData()),
+				$name);
 		}
 	} continue { $c = $c->getNextSibling(); }
 
 	$rinfo->{nsset}->{$oname}->{self} = $ns;
+	$rinfo->{nsset}->{$oname}->{contact} = $cs;
+	$rinfo->{nsset}->{$oname}->{status} = $po->create_local_object('status')->add(@s);
 }
 
 sub transfer_query

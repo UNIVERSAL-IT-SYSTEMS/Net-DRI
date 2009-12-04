@@ -6,7 +6,7 @@ use Net::DRI::Data::Raw;
 use DateTime;
 use DateTime::Duration;
 
-use Test::More tests => 46;
+use Test::More tests => 54;
 eval { no warnings; require Test::LongString; Test::LongString->import(max => 100); $Test::LongString::Context=50; };
 *{'main::is_string'}=\&main::is if $@;
 
@@ -419,7 +419,7 @@ die('Error ' . $rc->code() . ': ' . $rc->message()) unless ($rc->is_success());
 is($R1, '<?xml version="1.0" encoding="UTF-8" standalone="no"?><epp xmlns="urn:ietf:params:xml:ns:epp-1.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="urn:ietf:params:xml:ns:epp-1.0 epp-1.0.xsd"><command><delete><nsset:delete xmlns:nsset="http://www.nic.cz/xml/epp/nsset-1.2" xsi:schemaLocation="http://www.nic.cz/xml/epp/nsset-1.2 nsset-1.2.xsd"><nsset:id>testservers</nsset:id></nsset:delete></delete><clTRID>ABC-12345</clTRID></command></epp>', 'nsset delete xml correct');
 
 ## NSSET info
-$R2 = $E1 . '<response><result code="1000"><msg>Command completed successfully</msg></result>' . $TRID . '</response>' . $E2;
+$R2 = $E1 . '<response><result code="1000"><msg>Command completed successfully</msg></result><resData><nsset:infData xmlns:nsset="http://www.nic.cz/xml/epp/nsset-1.2" xsi:schemaLocation="http://www.nic.cz/xml/epp/nsset-1.2 nsset-1.2.xsd"><nsset:id>prodservers</nsset:id><nsset:roid>N0000164015-CZ</nsset:roid><nsset:status s="ok">Objekt is without restrictions</nsset:status><nsset:clID>REG-FRED_A</nsset:clID><nsset:crID>REG-FRED_A</nsset:crID><nsset:crDate>2008-05-26T17:41:29+02:00</nsset:crDate><nsset:authInfo>blablabla</nsset:authInfo><nsset:ns><nsset:name>dns1.syhosting.cz</nsset:name><nsset:addr>193.219.115.46</nsset:addr></nsset:ns><nsset:ns><nsset:name>dns3.syhosting.cz</nsset:name><nsset:addr>212.101.151.35</nsset:addr></nsset:ns><nsset:ns><nsset:name>dns2.syhosting.cz</nsset:name><nsset:addr>193.219.115.51</nsset:addr></nsset:ns><nsset:tech>TL1-CZ</nsset:tech><nsset:reportlevel>0</nsset:reportlevel></nsset:infData></resData>' . $TRID . '</response>' . $E2;
 
 eval {
 	$rc = $ro->info('prodservers');
@@ -438,6 +438,24 @@ if ($@)
 
 die('Error ' . $rc->code() . ': ' . $rc->message()) unless ($rc->is_success());
 is($R1, '<?xml version="1.0" encoding="UTF-8" standalone="no"?><epp xmlns="urn:ietf:params:xml:ns:epp-1.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="urn:ietf:params:xml:ns:epp-1.0 epp-1.0.xsd"><command><info><nsset:info xmlns:nsset="http://www.nic.cz/xml/epp/nsset-1.2" xsi:schemaLocation="http://www.nic.cz/xml/epp/nsset-1.2 nsset-1.2.xsd"><nsset:id>prodservers</nsset:id></nsset:info></info><clTRID>ABC-12345</clTRID></command></epp>', 'nsset info xml correct');
+is($dri->get_info('name', 'nsset', 'prodservers'), 'prodservers',
+	'nsset info name');
+is($dri->get_info('roid', 'nsset', 'prodservers'), 'N0000164015-CZ',
+	'nsset info roid');
+is($dri->get_info('crID', 'nsset', 'prodservers'), 'REG-FRED_A',
+	'nsset info crID');
+is($dri->get_info('crDate', 'nsset', 'prodservers'), '2008-05-26T17:41:29',
+	'nsset info crDate');
+is($dri->get_info('auth', 'nsset', 'prodservers')->{pw}, 'blablabla',
+	'nsset info auth');
+is(join(',', $dri->get_info('status', 'nsset', 'prodservers')->list_status()),
+	'ok', 'nsset info status');
+is($dri->get_info('reportlevel', 'nsset', 'prodservers'), 0,
+	'nsset info reportlevel');
+$ns = $dri->get_info('self', 'nsset', 'prodservers');
+is(join(',', $ns->get_names()),
+	'dns1.syhosting.cz,dns3.syhosting.cz,dns2.syhosting.cz',
+	'nsset info ns');
 
 ## NSSET transfer query
 $R2 = $E1 . '<response><result code="1000"><msg>Command completed successfully</msg></result>' . $TRID . '</response>' . $E2;

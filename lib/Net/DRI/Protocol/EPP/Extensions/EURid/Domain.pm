@@ -82,9 +82,12 @@ sub register_commands
 	  check             => [ \&check, \&check_parse ],
           delete            => [ \&delete, undef ],
           transfer_request  => [ \&transfer_request, undef ],
+          transfer_cancel     => [ \&transfer_cancel, undef ],
           undelete          => [ \&undelete, undef ],
           transferq_request => [ \&transferq_request, undef ],
+          transferq_cancel  => [ \&transferq_cancel, undef ],
           trade_request     => [ \&trade_request, undef ],
+          trade_cancel      => [ \&trade_cancel, undef ],
           reactivate        => [ \&reactivate, undef ],
          );
 
@@ -292,19 +295,39 @@ sub transfer_request
  my ($epp,$domain,$rd)=@_;
  my $mes=$epp->message();
 
+ # We must overwrite the command body here in case someone specified
+ # an authcode.
+ my @d = Net::DRI::Protocol::EPP::Core::Domain::build_command($mes,
+	['transfer',{op=>'request'}], $domain);
+ $mes->command_body(\@d);
+
  my @n=add_transfer($epp,$mes,$domain,$rd);
  my $eid=build_command_extension($mes,$epp,'eurid:ext');
- $mes->command_extension($eid,['eurid:transfer',['eurid:domain',@n]]);
+ $mes->command_extension($eid,['eurid:transfer',@n]);
+}
+
+sub transfer_cancel
+{
+ my ($epp, $domain, $rd) = @_;
+ my $mes = $epp->message();
+ my @n;
+
+ @n = ['eurid:reason', $rd->{reason}]
+	if (exists($rd->{reason}) && $rd->{reason});
+ my $eid = build_command_extension($mes, $epp, 'eurid:ext');
+ $mes->command_extension($eid, ['eurid:cancel', @n]);
 }
 
 sub add_transfer
 {
  my ($epp,$mes,$domain,$rd)=@_;
-
- Net::DRI::Exception::usererr_insufficient_parameters('registrant and billing are mandatory') unless (defined($rd) && (ref($rd) eq 'HASH') && exists($rd->{contact}) && UNIVERSAL::isa($rd->{contact},'Net::DRI::Data::ContactSet') && $rd->{contact}->has_type('registrant') && $rd->{contact}->has_type('billing'));
-
+ Net::DRI::Exception::usererr_insufficient_parameters('rd should be a hash')
+	unless (defined($rd) && (ref($rd) eq 'HASH'));
  my $cs=$rd->{contact};
  my @n;
+ my @d;
+
+ Net::DRI::Exception::usererr_insufficient_parameters('registrant and billing are mandatory') unless (UNIVERSAL::isa($cs,'Net::DRI::Data::ContactSet') && $cs->has_type('registrant') && $cs->has_type('billing'));
 
  my $creg=$cs->get('registrant');
  Net::DRI::Exception::usererr_invalid_parameters('registrant must be a contact object or #AUTO#') unless (UNIVERSAL::isa($creg,'Net::DRI::Data::Contact') || (!ref($creg) && ($creg eq '#AUTO#')));
@@ -332,7 +355,11 @@ sub add_transfer
  }
 
  push @n,add_nsgroup($rd->{nsgroup}) if (exists($rd->{nsgroup}));
- return @n;
+ push(@d, ['eurid:domain', @n]);
+ push(@d, ['eurid:ownerAuthCode', $rd->{auth}->{pw}])
+	if (exists($rd->{auth}) && ref($rd->{auth}) eq 'HASH' &&
+	    exists($rd->{auth}->{pw}) && ref($rd->{auth}->{pw}) eq '');
+ return @d;
 }
 
 sub add_nsgroup
@@ -375,7 +402,23 @@ sub transferq_request
 
  my @n=add_transfer($epp,$mes,$domain,$rd);
  my $eid=build_command_extension($mes,$epp,'eurid:ext');
- $mes->command_extension($eid,['eurid:transferq',['eurid:domain',@n]]);
+ $mes->command_extension($eid,['eurid:transferq',@n]);
+}
+
+sub transferq_cancel
+{
+ my ($epp, $domain, $rd) = @_;
+ my $mes = $epp->message();
+ my @d = Net::DRI::Protocol::EPP::Core::Domain::build_command($mes,
+	['transferq', {'op' => 'cancel'}], $domain);
+ my @n;
+
+ $mes->command_body(\@d);
+
+ my $eid = build_command_extension($mes,$epp,'eurid:ext');
+ @n = ['eurid:reason', $rd->{reason}]
+	if (exists($rd->{reason}) && $rd->{reason});
+ $mes->command_extension($eid,['eurid:cancel',@n]);
 }
 
 sub trade_request
@@ -387,7 +430,23 @@ sub trade_request
 
  my @n=add_transfer($epp,$mes,$domain,$rd);
  my $eid=build_command_extension($mes,$epp,'eurid:ext');
- $mes->command_extension($eid,['eurid:trade',['eurid:domain',@n]]);
+ $mes->command_extension($eid,['eurid:trade',@n]);
+}
+
+sub trade_cancel
+{
+ my ($epp, $domain, $rd) = @_;
+ my $mes = $epp->message();
+ my @d = Net::DRI::Protocol::EPP::Core::Domain::build_command($mes, ['trade',
+	{op => 'cancel'}], $domain);
+ my @n;
+
+ $mes->command_body(\@d);
+
+ my $eid=build_command_extension($mes, $epp, 'eurid:ext');
+ @n = ['eurid:reason', $rd->{reason}]
+	if (exists($rd->{reason}) && $rd->{reason});
+ $mes->command_extension($eid, ['eurid:cancel', @n]);
 }
 
 sub reactivate

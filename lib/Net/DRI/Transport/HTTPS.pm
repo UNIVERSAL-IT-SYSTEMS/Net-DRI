@@ -22,6 +22,7 @@ use strict;
 use base qw/Net::DRI::Transport/;
 
 use LWP::UserAgent;
+use LWP::Protocol::http;
 
 use Net::DRI::Exception;
 
@@ -94,6 +95,7 @@ sub new
  my $po = shift;
  my %opts = (@_ == 1 && ref($_[0])) ? %{$_[0]} : @_;
  my $self = $class->SUPER::new(\%opts); ## We are now officially a Net::DRI::Transport instance
+ my @extra_sockopts;
  $self->has_state(1);
  $self->is_sync(1);
  $self->name('https');
@@ -127,6 +129,10 @@ sub new
  my @needed = ('login','logout');
  eval 'require ' . $t{pc}; ## no critic (ProhibitStringyEval)
  Net::DRI::Exception::usererr_invalid_parameters("protocol_connection class must have: " . join(" ", @needed)) if (grep { ! $t{pc}->can($_) } @needed);
+
+ push(@extra_sockopts, LocalAddr => $opts{local_host})
+	if (defined($opts{local_host}));
+ @LWP::Protocol::http::EXTRA_SOCK_OPTS = @extra_sockopts if (@extra_sockopts);
 
  $self->{transport} = \%t;
  bless($self, $class); ## rebless in my class

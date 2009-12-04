@@ -560,15 +560,7 @@ sub update
 
  Net::DRI::Exception::usererr_invalid_parameters($todo.' must be a Net::DRI::Data::Changes object') unless ($todo && UNIVERSAL::isa($todo,'Net::DRI::Data::Changes'));
 
- if ((grep { ! /^(?:add|del)$/ } $todo->types('ns')) ||
-     (grep { ! /^(?:add|del)$/ } $todo->types('status')) ||
-     (grep { ! /^(?:add|del)$/ } $todo->types('contact')) ||
-     (grep { ! /^set$/ } $todo->types('registrant')) ||
-     (grep { ! /^set$/ } $todo->types('auth'))
-    )
- {
-  Net::DRI::Exception->die(0,'protocol/EPP',11,'Only ns/status/contact add/del or registrant/authinfo set available for domain');
- }
+ # Todo types should already be verified by the capabilities framework
 
  my @d=build_command($mes,'update',$domain);
 

@@ -69,6 +69,7 @@ sub register_commands
  my ($class,$version)=@_;
  my %domtmp=(
            create =>		[ \&dom_create, undef ],
+           update =>		[ \&dom_update, undef ],
 	   info =>		[ undef, \&dom_parse ]
          );
  my %contacttmp=(
@@ -115,6 +116,41 @@ sub dom_create
   my $eid=$mes->command_extension_register('asia:create','xmlns:asia="urn:afilias:params:xml:ns:asia-1.0" xsi:schemaLocation="urn:afilias:params:xml:ns:asia-1.0 asia-1.0.xsd"');
   $mes->command_extension($eid,[@ceddata]);
  }
+}
+
+sub dom_update
+{
+	my ($epp, $domain, $todo) = @_;
+	my $mes = $epp->message();
+	my $url = $todo->set('url');
+	my $cs = $todo->set('contact');
+	my @ceddata;
+
+	push(@ceddata, ['asia:maintainerUrl', $url]) if (defined($url));
+
+	if (defined($cs))
+	{
+		foreach my $type ($cs->types())
+		{
+			# Skip standard types
+			next if (grep { $_ eq $type } qw(registrant admin tech billing));
+
+			foreach my $c ($cs->get($type))
+			{
+				push(@ceddata, ['asia:contact',
+					{type => $type}, $c->srid()]);
+			}
+		}
+	}
+
+	if (@ceddata)
+	{
+		my $eid = $mes->command_extension_register('asia:create',
+			'xmlns:asia="urn:afilias:params:xml:ns:asia-1.0" ' .
+			'xsi:schemaLocation="urn:afilias:params:xml:ns:' .
+			'asia-1.0 asia-1.0.xsd"');
+		$mes->command_extension($eid, ['asia:chg', @ceddata]);
+	}
 }
 
 sub dom_parse

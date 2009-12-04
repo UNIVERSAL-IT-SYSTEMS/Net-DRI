@@ -263,7 +263,7 @@ sub get_data
 sub parse_postalinfo
 {
  my ($c,$rcd)=@_;
- my $type=$c->getAttribute('type'); ## int or loc
+ my $type=$c->getAttribute('type') || 'loc'; ## int or loc
  my $ti={loc=>0,int=>1}->{$type};
 
  my $n=$c->getFirstChild();

@@ -90,6 +90,10 @@ sub new
   $rfact->{contact}=sub { return Net::DRI::Data::Contact::ASIA->new(@_); };
  }
 
+ my $rcapa = $self->capabilities();
+ $rcapa->{domain_update}->{url} = ['set'];
+ $rcapa->{domain_update}->{contact} = ['add','set','del'];
+
  bless($self,$c); ## rebless
  return $self;
 }

@@ -84,7 +84,7 @@ sub register_commands
           transfer_request  => [ \&transfer_request, undef ],
           undelete          => [ \&undelete, undef ],
           transferq_request => [ \&transferq_request, undef ],
-          trade             => [ \&trade, undef ],
+          trade_request     => [ \&trade_request, undef ],
           reactivate        => [ \&reactivate, undef ],
          );
 
@@ -378,11 +378,11 @@ sub transferq_request
  $mes->command_extension($eid,['eurid:transferq',['eurid:domain',@n]]);
 }
 
-sub trade
+sub trade_request
 {
  my ($epp,$domain,$rd)=@_;
  my $mes=$epp->message();
- my @d=Net::DRI::Protocol::EPP::Core::Domain::build_command($mes,'trade',$domain);
+ my @d=Net::DRI::Protocol::EPP::Core::Domain::build_command($mes,['trade',{op=>'req'}],$domain);
  $mes->command_body(\@d);
 
  my @n=add_transfer($epp,$mes,$domain,$rd);

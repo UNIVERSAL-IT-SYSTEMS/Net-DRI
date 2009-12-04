@@ -383,8 +383,21 @@ $cs->set($dri->local_object('contact')->srid('mt24'),'tech');
 $rd{contact}=$cs;
 $rd{trDate}=DateTime->new(year=>2005,month=>9,day=>29,hour=>22);
 $rd{nsgroup}='nsgroup-eurid';
-$rc=$ro->trade('fox.eu',\%rd);
-is($R1,'<?xml version="1.0" encoding="UTF-8" standalone="no"?><epp xmlns="http://www.eurid.eu/xml/epp/epp-1.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.eurid.eu/xml/epp/epp-1.0 epp-1.0.xsd"><command><trade><domain:trade xmlns:domain="http://www.eurid.eu/xml/epp/domain-1.0" xsi:schemaLocation="http://www.eurid.eu/xml/epp/domain-1.0 domain-1.0.xsd"><domain:name>fox.eu</domain:name></domain:trade></trade><extension><eurid:ext xmlns:eurid="http://www.eurid.eu/xml/epp/eurid-1.0" xsi:schemaLocation="http://www.eurid.eu/xml/epp/eurid-1.0 eurid-1.0.xsd"><eurid:trade><eurid:domain><eurid:registrant>ak4589</eurid:registrant><eurid:trDate>2005-09-29T22:00:00.000000000Z</eurid:trDate><eurid:billing>jj1</eurid:billing><eurid:tech>mt24</eurid:tech><eurid:nsgroup>nsgroup-eurid</eurid:nsgroup></eurid:domain></eurid:trade></eurid:ext></extension><clTRID>TRID-0001</clTRID></command></epp>','domain_trade build'); ## corrected from EURid sample
+eval {
+	$rc=$ro->trade_request('fox.eu',\%rd);
+};
+if ($@)
+{
+	if (ref($@) eq 'Net::DRI::Exception')
+	{
+		die($@->as_string());
+	}
+	else
+	{
+		die($@);
+	}
+}
+is($R1,'<?xml version="1.0" encoding="UTF-8" standalone="no"?><epp xmlns="http://www.eurid.eu/xml/epp/epp-1.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.eurid.eu/xml/epp/epp-1.0 epp-1.0.xsd"><command><trade op="req"><domain:trade xmlns:domain="http://www.eurid.eu/xml/epp/domain-1.0" xsi:schemaLocation="http://www.eurid.eu/xml/epp/domain-1.0 domain-1.0.xsd"><domain:name>fox.eu</domain:name></domain:trade></trade><extension><eurid:ext xmlns:eurid="http://www.eurid.eu/xml/epp/eurid-1.0" xsi:schemaLocation="http://www.eurid.eu/xml/epp/eurid-1.0 eurid-1.0.xsd"><eurid:trade><eurid:domain><eurid:registrant>ak4589</eurid:registrant><eurid:trDate>2005-09-29T22:00:00.000000000Z</eurid:trDate><eurid:billing>jj1</eurid:billing><eurid:tech>mt24</eurid:tech><eurid:nsgroup>nsgroup-eurid</eurid:nsgroup></eurid:domain></eurid:trade></eurid:ext></extension><clTRID>TRID-0001</clTRID></command></epp>','domain_trade build'); ## corrected from EURid sample
 is($rc->is_success(),1,'domain_trade build');
 
 

@@ -80,8 +80,8 @@ sub new
 
  my $self=$c->SUPER::new($drd,$version,[keys(%e)]); ## we are now officially a Net::DRI::Protocol::EPP object
 
- $self->{ns}->{pl_domain}=['urn:nask:params:xml:ns:extdom-1.0','extdom-1.0.xsd'];
- $self->{ns}->{pl_contact}=['urn:nask:params:xml:ns:extcon-1.0','extcon-1.0.xsd'];
+ $self->{ns}->{pl_domain}=['http://www.dns.pl/NASK-EPP/extdom-1.0','extdom-1.0.xsd'];
+ $self->{ns}->{pl_contact}=['http://www.dns.pl/NASK-EPP/extcon-1.0','extcon-1.0.xsd'];
 ## $self->{ns}->{future}=['http://www.dns.pl/NASK-EPP/future-1.0','future-1.0.xsd'];
 
  my $rcapa=$self->capabilities();

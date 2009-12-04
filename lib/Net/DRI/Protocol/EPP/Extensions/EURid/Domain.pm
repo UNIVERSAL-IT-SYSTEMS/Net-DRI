@@ -88,8 +88,16 @@ sub register_commands
           undelete          => [ \&undelete, undef ],
           transferq_request => [ \&transferq_request, undef ],
           transferq_cancel  => [ \&transferq_cancel, undef ],
+          transferq_answer  => [ \&transferq_answer, undef ],
+          transferq_accept  => [ \&transferq_accept, undef ],
+          transferq_refuse  => [ \&transferq_refuse, undef ],
+          transferq_query   => [ \&transferq_query, undef ],
           trade_request     => [ \&trade_request, undef ],
           trade_cancel      => [ \&trade_cancel, undef ],
+          trade_answer      => [ \&trade_answer, undef ],
+          trade_accept      => [ \&trade_accept, undef ],
+          trade_refuse      => [ \&trade_refuse, undef ],
+          trade_query       => [ \&trade_query, undef ],
           reactivate        => [ \&reactivate, undef ],
          );
 
@@ -488,6 +496,57 @@ sub transferq_query
  $mes->command_extension($eid, ['eurid:transfer', @n]);
 }
 
+sub transferq_query
+{
+ my ($epp, $domain, $rd) = @_;
+ my $mes = $epp->message();
+ my @n;
+
+ # We must overwrite the command body here in case someone specified
+ # an authcode.
+ my @d = Net::DRI::Protocol::EPP::Core::Domain::build_command($mes,
+	['transferq', {'op' => 'query'}], $domain);
+ $mes->command_body(\@d);
+
+ my $eid = build_command_extension($mes,$epp,'eurid:ext');
+ push(@n, ['eurid:ownerAuthCode', $rd->{auth}->{pw}])
+	if (verify_rd($rd, 'auth') && verify_rd($rd->{auth}, 'pw'));
+ $mes->command_extension($eid,['eurid:transfer',@n]);
+}
+
+sub transferq_answer
+{
+ my ($epp, $domain, $rd) = @_;
+ my $mes = $epp->message();
+ my @n;
+
+ # We must overwrite the command body here in case someone specified
+ # an authcode.
+ my @d = Net::DRI::Protocol::EPP::Core::Domain::build_command($mes,
+	['transferq', {'op' => (verify_rd($rd, 'approve') && $rd->{approve} ?
+		'approve' : 'reject')}], $domain);
+ $mes->command_body(\@d);
+
+ my $eid = build_command_extension($mes,$epp,'eurid:ext');
+ push(@n, ['eurid:ownerAuthCode', $rd->{auth}->{pw}])
+	if (verify_rd($rd, 'auth') && verify_rd($rd->{auth}, 'pw'));
+ $mes->command_extension($eid,['eurid:transfer',@n]);
+}
+
+sub transferq_accept
+{
+ my ($epp, $domain, $rd) = @_;
+ $rd->{approve} = 1;
+ return transferq_answer($epp, $domain, $rd);
+}
+
+sub transferq_refuse
+{
+ my ($epp, $domain, $rd) = @_;
+ $rd->{approve} = 0;
+ return transferq_answer($epp, $domain, $rd);
+}
+
 sub trade_request
 {
  my ($epp,$domain,$rd)=@_;
@@ -513,6 +572,53 @@ sub trade_cancel
  my $eid=build_command_extension($mes, $epp, 'eurid:ext');
  @n = ['eurid:reason', $rd->{reason}] if (verify_rd($rd, 'reason'));
  $mes->command_extension($eid, ['eurid:cancel', @n]);
+}
+
+sub trade_answer
+{
+ my ($epp, $domain, $rd) = @_;
+ my $mes = $epp->message();
+ my @d = Net::DRI::Protocol::EPP::Core::Domain::build_command($mes, ['trade',
+	{op => (verify_rd($rd, 'approve') && $rd->{approve} ?
+		'approve' : 'reject')}], $domain);
+ my @n;
+
+ $mes->command_body(\@d);
+
+ my $eid=build_command_extension($mes, $epp, 'eurid:ext');
+ push(@n, ['eurid:ownerAuthCode', $rd->{auth}->{pw}])
+	if (verify_rd($rd, 'auth') && verify_rd($rd->{auth}, 'pw'));
+ $mes->command_extension($eid, ['eurid:transfer', @n]);
+}
+
+sub trade_accept
+{
+ my ($epp, $domain, $rd) = @_;
+ $rd->{approve} = 1;
+ return trade_answer($epp, $domain, $rd);
+}
+
+sub trade_refuse
+{
+ my ($epp, $domain, $rd) = @_;
+ $rd->{approve} = 0;
+ return trade_answer($epp, $domain, $rd);
+}
+
+sub trade_query
+{
+ my ($epp, $domain, $rd) = @_;
+ my $mes = $epp->message();
+ my @d = Net::DRI::Protocol::EPP::Core::Domain::build_command($mes, ['trade',
+	{op => 'query'}], $domain);
+ my @n;
+
+ $mes->command_body(\@d);
+
+ my $eid=build_command_extension($mes, $epp, 'eurid:ext');
+ push(@n, ['eurid:ownerAuthCode', $rd->{auth}->{pw}])
+	if (verify_rd($rd, 'auth') && verify_rd($rd->{auth}, 'pw'));
+ $mes->command_extension($eid, ['eurid:transfer', @n]);
 }
 
 sub reactivate

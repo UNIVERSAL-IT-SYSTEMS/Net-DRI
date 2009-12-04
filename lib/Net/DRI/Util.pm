@@ -21,6 +21,11 @@ use strict;
 
 use Time::HiRes ();
 use Net::DRI::Exception;
+use vars qw(@EXPORT_OK);
+use base qw(Exporter);
+
+# Don't export this fully yet since some users of this module define their own
+our @EXPORT_OK = qw(verify_rd);
 
 our $VERSION=do { my @r=(q$Revision: 1.16 $=~/\d+/g); sprintf("%d".".%02d" x $#r, @r); };
 
@@ -392,6 +397,15 @@ sub remcam
  $in=~s/ID/_id/g;
  $in=~s/([A-Z])/_$1/g;
  return lc($in);
+}
+
+sub verify_rd
+{
+ my ($rd, $key) = @_;
+ return 0 unless (defined($key) && $key);
+ return 0 unless (defined($rd) && (ref($rd) eq 'HASH') &&
+	exists($rd->{$key}) && defined($rd->{$key}));
+ return 1;
 }
 
 ####################################################################################################

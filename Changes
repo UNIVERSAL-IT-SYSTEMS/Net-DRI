@@ -1,3 +1,19 @@
+0.85tl3 2008-07-07
+
++ Fixed .CN module documentation
++ Added tests for .ASIA and .CH/.LI
++ Added support for the .CZ, .BZ, .JOBS and .PRO TLDs
++ Added support for UINs in .TRAVEL
++ Added support for .JOBS and .PRO contact extensions
++ Enabled users to manually specify the subproductid for VNDS contact
+  operations
++ Updated .EU implementation after an upstream change
++ Modified the HTTPS client interface so the local_host parameter is honored
++ Implemented the .AT keydate extension
++ Fixed contact addition and removal for .ASIA for types that want to be set
++ Fixed various parsing bugs
++ Fixed handling of messages that contain carriage returns
+
 0.85tl2 2008-04-24
 
 + Support for the Afilias CCTLDs (hn, sc, vc, ag, bz, lc, mn)

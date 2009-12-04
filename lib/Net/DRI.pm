@@ -26,7 +26,7 @@ use Net::DRI::Registry;
 use Net::DRI::Util;
 
 our $AUTOLOAD;
-our $VERSION='0.85tl2';
+our $VERSION='0.85tl3';
 our $CVS_REVISION=do { my @r=(q$Revision: 1.28 $=~/\d+/g); sprintf("%d".".%02d" x $#r, @r); };
 
 =pod

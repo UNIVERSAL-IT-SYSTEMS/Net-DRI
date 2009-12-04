@@ -89,10 +89,10 @@ sub add_job
 	my @jobdata;
 
 	return unless (UNIVERSAL::isa($contact, 'Net::DRI::Data::Contact::JOBS'));
-	return unless (UNIVERSAL::can($contact, 'jobinfo') &&
-		UNIVERSAL::isa($contact->jobinfo(), 'HASH'));
+	return unless (UNIVERSAL::can($contact, 'jobinfo'));
 
 	$info = $contact->jobinfo();
+	return unless (defined($info) && UNIVERSAL::isa($info, 'HASH'));
 	push(@jobdata, ['jobsContact:title', $info->{title}])
 		if (defined($info->{title}) && length($info->{title}));
 	push(@jobdata, ['jobsContact:website', $info->{website}])

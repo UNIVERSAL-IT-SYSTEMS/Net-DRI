@@ -112,7 +112,8 @@ sub add_pro_extinfo
  push(@prodata, ['rpro:tradeMarkNumber', int($ph->{tmnumber})])
 	if (exists($ph->{tmnumber}) && int($ph->{tmnumber}));
 
- push(@prodata, ['rpro:registrationType', $ph->{type}])
+ push(@prodata, ['rpro:registrationType', (exists($ph->{activate}) &&
+	$ph->{activate} ? +{ activate => 'y' } : +{}), $ph->{type}])
 	if (exists($ph->{type}));
  push(@prodata, ['rpro:redirectTarget', $ph->{redirect}])
 	if (exists($ph->{redirect}) &&

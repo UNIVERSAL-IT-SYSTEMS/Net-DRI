@@ -5,7 +5,7 @@ use Net::DRI::Data::Raw;
 use DateTime::Duration;
 use Data::Dumper;
 
-use Test::More tests => 56;
+use Test::More tests => 59;
 
 eval { use Test::LongString max => 100; $Test::LongString::Context = 50; };
 *{'main::is_string'} = \&main::is if $@;
@@ -83,6 +83,28 @@ print(STDERR $@->as_string()) if ($@);
 isa_ok($rc, 'Net::DRI::Protocol::ResultStatus');
 is($rc->is_success(), 1, 'domain create');
 is($R1, '<?xml version="1.0" encoding="UTF-8" standalone="no"?><epp xmlns="urn:ietf:params:xml:ns:epp-1.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="urn:ietf:params:xml:ns:epp-1.0 epp-1.0.xsd"><command><create><domain:create xmlns:domain="urn:ietf:params:xml:ns:domain-1.0" xsi:schemaLocation="urn:ietf:params:xml:ns:domain-1.0 domain-1.0.xsd"><domain:name>wirzenius.law.pro</domain:name><domain:period unit="y">4</domain:period><domain:ns><domain:hostObj>ns1.test.pro</domain:hostObj><domain:hostObj>ns2.test.pro</domain:hostObj></domain:ns><domain:registrant>testcontact3</domain:registrant><domain:contact type="admin">testcontact2</domain:contact><domain:contact type="tech">testcontact1</domain:contact><domain:authInfo><domain:pw>testTest</domain:pw></domain:authInfo></domain:create></create><extension><rpro:proDomain xmlns:rpro="http://registrypro.pro/2003/epp/1/rpro-epp-2.0" xsi:schemaLocation="http://registrypro.pro/2003/epp/1/rpro-epp-2.0 rpro-epp-2.0.xsd"><rpro:registrationType>Resolving</rpro:registrationType><rpro:authorization roid="RPRODEF-SAMPLE-1">FAKETEXT</rpro:authorization></rpro:proDomain></extension><clTRID>ABC-12345</clTRID></command></epp>', 'domain create xml');
+
+eval {
+	$rc = $dri->domain_create_only('bucerius.law.pro', {
+		ns => $dri->local_object('hosts')->add('ns1.test.pro')->
+			add('ns2.test.pro'),
+		duration =>	new DateTime::Duration(years => 4),
+		contact =>	$cs,
+		pro =>		{
+			type =>	'Resolving',
+			auth => {
+				pw =>	'FAKETEXT',
+				roid =>	'RPRODEF-SAMPLE-1'
+			},
+			activate => 1
+		},
+		auth =>		{ pw => 'testTest' }
+	});
+};
+print(STDERR $@->as_string()) if ($@);
+isa_ok($rc, 'Net::DRI::Protocol::ResultStatus');
+is($rc->is_success(), 1, 'domain activate');
+is($R1, '<?xml version="1.0" encoding="UTF-8" standalone="no"?><epp xmlns="urn:ietf:params:xml:ns:epp-1.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="urn:ietf:params:xml:ns:epp-1.0 epp-1.0.xsd"><command><create><domain:create xmlns:domain="urn:ietf:params:xml:ns:domain-1.0" xsi:schemaLocation="urn:ietf:params:xml:ns:domain-1.0 domain-1.0.xsd"><domain:name>bucerius.law.pro</domain:name><domain:period unit="y">4</domain:period><domain:ns><domain:hostObj>ns1.test.pro</domain:hostObj><domain:hostObj>ns2.test.pro</domain:hostObj></domain:ns><domain:registrant>testcontact3</domain:registrant><domain:contact type="admin">testcontact2</domain:contact><domain:contact type="tech">testcontact1</domain:contact><domain:authInfo><domain:pw>testTest</domain:pw></domain:authInfo></domain:create></create><extension><rpro:proDomain xmlns:rpro="http://registrypro.pro/2003/epp/1/rpro-epp-2.0" xsi:schemaLocation="http://registrypro.pro/2003/epp/1/rpro-epp-2.0 rpro-epp-2.0.xsd"><rpro:registrationType activate="y">Resolving</rpro:registrationType><rpro:authorization roid="RPRODEF-SAMPLE-1">FAKETEXT</rpro:authorization></rpro:proDomain></extension><clTRID>ABC-12345</clTRID></command></epp>', 'domain activate xml');
 
 ## Create a domain
 $R2 = $E1 . '<response>' . r(1001,'Command completed successfully; ' .

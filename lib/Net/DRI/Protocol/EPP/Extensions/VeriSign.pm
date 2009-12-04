@@ -20,6 +20,7 @@ package Net::DRI::Protocol::EPP::Extensions::VeriSign;
 use strict;
 
 use base qw/Net::DRI::Protocol::EPP/;
+use Net::DRI::Data::Contact::JOBS;
 
 our $VERSION=do { my @r=(q$Revision: 1.2 $=~/\d+/g); sprintf("%d".".%02d" x $#r, @r); };
 
@@ -81,12 +82,21 @@ sub new
  if (exists($e{':full'})) ## useful shortcut, modeled after Perl itself
  {
   delete($e{':full'});
+  $e{'Net::DRI::Protocol::EPP::Extensions::VeriSign::JobsContact'} =
+	(defined($defproduct) && $defproduct eq 'dotJOBS');
   $e{'Net::DRI::Protocol::EPP::Extensions::VeriSign::IDNLanguage'}=1;
   $e{'Net::DRI::Protocol::EPP::Extensions::VeriSign::WhoisInfo'}=1;
   $e{'Net::DRI::Protocol::EPP::Extensions::GracePeriod'}=1;
  }
 
  my $self=$c->SUPER::new($drd,$version,[keys(%e)]); ## we are now officially a Net::DRI::Protocol::EPP object
+
+ if (grep { $_ =~ /JobsContact$/ } keys(%e))
+ {
+  my $rfact = $self->factories();
+  $rfact->{contact} = sub { return Net::DRI::Data::Contact::JOBS->new(@_); };
+ }
+
  $self->default_parameters()->{subproductid}=$defproduct || '_auto_';
  $self->default_parameters()->{whois_info}=0;
  $self->default_parameters()->{breaks_rfc3915}=1;

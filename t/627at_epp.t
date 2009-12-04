@@ -3,7 +3,7 @@
 use Net::DRI;
 use Net::DRI::Data::Raw;
 
-use Test::More tests => 25;
+use Test::More tests => 31;
 eval { no warnings; require Test::LongString; Test::LongString->import(max => 100); $Test::LongString::Context=50; };
 *{'main::is_string'}=\&main::is if $@;
 
@@ -78,6 +78,15 @@ is($dri->get_info('last_id'), 375424692, 'message get_info last_id 1');
 is($dri->get_info('object_type', 'message', 375424692), 'domain','message get_info object_type');
 is($dri->get_info('object_id', 'message', 375424692), 'weingeist.at','message get_info object_id');
 is($dri->get_info('action', 'message', 375424692), 'domain-info-lock-customer','message get_info action');
+
+$R2 = $E1 . '<response><result code="1301"><msg>Command completed successfully; ack to dequeue</msg></result><msgQ count="1" id="523423542"><qDate>2008-06-19T07:24:58.85Z</qDate><msg>EPP response to a transaction executed on your behalf: objecttype [domain] command [transfer-execute] objectname [neingeist.at]</msg></msgQ><resData><message xmlns="http://www.nic.at/xsd/at-ext-message-1.0" type="response-copy" xsi:schemaLocation="http://www.nic.at/xsd/at-ext-message-1.0 at-ext-message-1.0.xsd"><desc>EPP response to a transaction executed on your behalf: objecttype [domain] command [transfer-execute] objectname [neingeist.at]</desc><data><entry name="objecttype">domain</entry><entry name="command">transfer-execute</entry><entry name="objectname">neingeist.at</entry><epp xmlns="urn:ietf:params:xml:ns:epp-1.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="urn:ietf:params:xml:ns:epp-1.0 epp-1.0.xsd"><response><result code="1000"><msg>Command completed successfully</msg></result><resData><domain:trnData xmlns:domain="urn:ietf:params:xml:ns:domain-1.0" xsi:schemaLocation="urn:ietf:params:xml:ns:domain-1.0 domain-1.0.xsd"><domain:name>neingeist.at</domain:name><domain:trStatus>serverApproved</domain:trStatus><domain:reID>Reg123</domain:reID><domain:reDate>2009-01-01T01:23:51.00Z</domain:reDate><domain:acID>Reg123</domain:acID><domain:acDate>2009-01-01T01:01:01.00Z</domain:acDate></domain:trnData></resData><extension><at-ext-domain:keydate xmlns:at-ext-domain="http://www.nic.at/xsd/at-ext-domain-1.0" xsi:schemaLocation="http://www.nic.at/xsd/at-ext-domain-1.0 at-ext-domain-1.0.xsd">0423</at-ext-domain:keydate></extension><trID><clTRID>ABCD-123</clTRID><svTRID>123-ABC</svTRID></trID></response></epp></data></message></resData>' . $TRID . '</response>' . $E2;
+$rc = $dri->message_retrieve();
+is($rc->is_success(), 1, 'message polled successfully');
+is($dri->get_info('last_id'), 523423542, 'message get_info last_id 1');
+is($dri->get_info('object_type', 'message', 523423542), 'domain','message get_info object_type');
+is($dri->get_info('object_id', 'message', 523423542), 'neingeist.at','message get_info object_id');
+is($dri->get_info('action', 'message', 523423542), 'transfer-execute','message get_info action');
+is($dri->get_info('keydate', 'message', 523423542), '0423','message get_info keydate');
 
 exit 0;
 

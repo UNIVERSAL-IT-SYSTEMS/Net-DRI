@@ -3,7 +3,7 @@
 use Net::DRI;
 use Net::DRI::Data::Raw;
 use DateTime::Duration;
-use Test::More tests => 253;
+use Test::More tests => 257;
 eval { no warnings; require Test::LongString; Test::LongString->import(max => 100); $Test::LongString::Context=50; };
 *{'main::is_string'}=\&main::is if $@;
 
@@ -25,12 +25,32 @@ sub myrecv
  return Net::DRI::Data::Raw->new_from_string($R2? $R2 : $E1.'<response>'.r().$TRID.'</response>'.$E2);
 }
 
-my $dri=Net::DRI->new(10);
-$dri->{trid_factory}=sub { return 'ABC-12345'; };
-$dri->add_registry('Nominet');
-$dri->target('Nominet')->new_current_profile('p1','Net::DRI::Transport::Dummy',[{f_send=>\&mysend,f_recv=>\&myrecv}],'Net::DRI::Protocol::EPP::Extensions::Nominet',[]);
+my $dri;
+
+eval {
+	$dri = Net::DRI->new(10);
+	$dri->{trid_factory} = sub { return 'ABC-12345'; };
+	$dri->add_registry('Nominet');
+	$dri->target('Nominet')->new_current_profile('p1', 'Net::DRI::Transport::Dummy', [{ f_send => \&mysend, f_recv => \&myrecv, protocol_version => 1 }], 'Net::DRI::Protocol::EPP::Extensions::Nominet', ['1.0', []]);
+};
+print(STDERR $@->as_string()) if ($@);
 
 my ($rc,$s,$d,$dh,@c,$co);
+
+## Session commands
+
+$R2 = $E1 . '<greeting><svID>Nominet EPP server epp.nominet.org.uk</svID><svDate>2008-08-11T12:17:31Z</svDate><svcMenu><version>1.0</version><lang>en</lang><objURI>http://www.nominet.org.uk/epp/xml/nom-account-1.0</objURI><objURI>http://www.nominet.org.uk/epp/xml/nom-domain-1.0</objURI><objURI>http://www.nominet.org.uk/epp/xml/nom-contact-1.0</objURI><objURI>http://www.nominet.org.uk/epp/xml/nom-ns-1.0</objURI></svcMenu><dcp><access><all/></access><statement><purpose><admin/><prov/></purpose><recipient><ours/></recipient><retention><indefinite/></retention></statement></dcp></greeting>' . $E2;
+$rc = $dri->process('session', 'connect', []);
+is($R1, $E1 . '<hello/>' . $E2, 'session connect build (hello command)');
+is($rc->is_success(), 1, 'session connect is_success');
+
+$R2 = $E1 . '<response><result code="1000"><msg> Command completed successfully</msg></result>' . $TRID . '</response>' . $E2;
+eval {
+	$rc = $dri->process('session', 'login', ['ClientX', 'foo-BAR2']);
+};
+print(STDERR $@->as_string()) if ($@);
+is($rc->is_success(), 1, 'session_login is_success');
+is($R1, $E1 . '<command><login><clID>ClientX</clID><pw>foo-BAR2</pw><options><version>1.0</version><lang>en</lang></options><svcs><objURI>http://www.nominet.org.uk/epp/xml/nom-account-1.0</objURI><objURI>http://www.nominet.org.uk/epp/xml/nom-domain-1.0</objURI><objURI>http://www.nominet.org.uk/epp/xml/nom-contact-1.0</objURI><objURI>http://www.nominet.org.uk/epp/xml/nom-ns-1.0</objURI></svcs></login><clTRID>ABC-12345</clTRID></command>' . $E2, 'session_login build');
 
 # ## Domain commands
 $R2=$E1.'<response>'.r().'<resData><domain:chkData xmlns:domain="http://www.nominet.org.uk/epp/xml/nom-domain-1.0" xsi:schemaLocation="http://www.nominet.org.uk/epp/xml/nom-domain-1.0 nom-domain-1.0.xsd"><domain:cd><domain:name avail="0">example.co.uk</domain:name></domain:cd><domain:cd><domain:name avail="1">example2.co.uk</domain:name></domain:cd></domain:chkData></resData>'.$TRID.'</response>'.$E2;

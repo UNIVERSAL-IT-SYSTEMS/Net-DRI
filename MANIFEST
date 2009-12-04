@@ -20,7 +20,9 @@ lib/Net/DRI/Data/Contact/ASIA.pm
 lib/Net/DRI/Data/Contact/AT.pm
 lib/Net/DRI/Data/Contact/BE.pm
 lib/Net/DRI/Data/Contact/CAT.pm
+lib/Net/DRI/Data/Contact/CN.pm
 lib/Net/DRI/Data/Contact/COOP.pm
+lib/Net/DRI/Data/Contact/DENIC.pm
 lib/Net/DRI/Data/Contact/EURid.pm
 lib/Net/DRI/Data/Contact/LU.pm
 lib/Net/DRI/Data/Contact/Nominet.pm
@@ -42,10 +44,13 @@ lib/Net/DRI/DRD/BE.pm
 lib/Net/DRI/DRD/BIZ.pm
 lib/Net/DRI/DRD/BookMyName.pm
 lib/Net/DRI/DRD/CAT.pm
+lib/Net/DRI/DRD/CN.pm
 lib/Net/DRI/DRD/COOP.pm
+lib/Net/DRI/DRD/DENIC.pm
 lib/Net/DRI/DRD/EURid.pm
 lib/Net/DRI/DRD/Gandi.pm
 lib/Net/DRI/DRD/ICANN.pm
+lib/Net/DRI/DRD/IDNCN.pm
 lib/Net/DRI/DRD/IENUMAT.pm
 lib/Net/DRI/DRD/INFO.pm
 lib/Net/DRI/DRD/LU.pm
@@ -57,6 +62,7 @@ lib/Net/DRI/DRD/ORG.pm
 lib/Net/DRI/DRD/OVH.pm
 lib/Net/DRI/DRD/PL.pm
 lib/Net/DRI/DRD/SE.pm
+lib/Net/DRI/DRD/TW.pm
 lib/Net/DRI/DRD/US.pm
 lib/Net/DRI/DRD/VNDS.pm
 lib/Net/DRI/DRD/WS.pm
@@ -103,6 +109,11 @@ lib/Net/DRI/Protocol/EPP/Extensions/CAT.pm
 lib/Net/DRI/Protocol/EPP/Extensions/CAT/Contact.pm
 lib/Net/DRI/Protocol/EPP/Extensions/CAT/DefensiveRegistration.pm
 lib/Net/DRI/Protocol/EPP/Extensions/CAT/Domain.pm
+lib/Net/DRI/Protocol/EPP/Extensions/CN.pm
+lib/Net/DRI/Protocol/EPP/Extensions/CN/Contact.pm
+lib/Net/DRI/Protocol/EPP/Extensions/CN/Domain.pm
+lib/Net/DRI/Protocol/EPP/Extensions/CN/Host.pm
+lib/Net/DRI/Protocol/EPP/Extensions/CN/Message.pm
 lib/Net/DRI/Protocol/EPP/Extensions/CentralNic.pm
 lib/Net/DRI/Protocol/EPP/Extensions/CentralNic/Release.pm
 lib/Net/DRI/Protocol/EPP/Extensions/CentralNic/TTL.pm
@@ -132,6 +143,7 @@ lib/Net/DRI/Protocol/EPP/Extensions/MOBI.pm
 lib/Net/DRI/Protocol/EPP/Extensions/MOBI/Domain.pm
 lib/Net/DRI/Protocol/EPP/Extensions/NAME.pm
 lib/Net/DRI/Protocol/EPP/Extensions/NAME/EmailFwd.pm
+lib/Net/DRI/Protocol/EPP/Extensions/NeuLevel/Restore.pm
 lib/Net/DRI/Protocol/EPP/Extensions/Nominet.pm
 lib/Net/DRI/Protocol/EPP/Extensions/Nominet/Account.pm
 lib/Net/DRI/Protocol/EPP/Extensions/Nominet/Contact.pm
@@ -153,6 +165,7 @@ lib/Net/DRI/Protocol/EPP/Extensions/VeriSign/IDNLanguage.pm
 lib/Net/DRI/Protocol/EPP/Extensions/VeriSign/NameStore.pm
 lib/Net/DRI/Protocol/EPP/Extensions/VeriSign/PollLowBalance.pm
 lib/Net/DRI/Protocol/EPP/Extensions/VeriSign/PollRGP.pm
+lib/Net/DRI/Protocol/EPP/Extensions/VeriSign/Restore.pm
 lib/Net/DRI/Protocol/EPP/Extensions/VeriSign/Sync.pm
 lib/Net/DRI/Protocol/EPP/Extensions/VeriSign/WhoisInfo.pm
 lib/Net/DRI/Protocol/EPP/Message.pm
@@ -168,6 +181,13 @@ lib/Net/DRI/Protocol/OVH/WS/Connection.pm
 lib/Net/DRI/Protocol/OVH/WS/Domain.pm
 lib/Net/DRI/Protocol/OVH/WS/Message.pm
 lib/Net/DRI/Protocol/ResultStatus.pm
+lib/Net/DRI/Protocol/RRI.pm
+lib/Net/DRI/Protocol/RRI/Connection.pm
+lib/Net/DRI/Protocol/RRI/Contact.pm
+lib/Net/DRI/Protocol/RRI/Domain.pm
+lib/Net/DRI/Protocol/RRI/Message.pm
+lib/Net/DRI/Protocol/RRI/RegistryMessage.pm
+lib/Net/DRI/Protocol/RRI/Session.pm
 lib/Net/DRI/Protocol/RRP.pm
 lib/Net/DRI/Protocol/RRP/Connection.pm
 lib/Net/DRI/Protocol/RRP/Core/Domain.pm
@@ -199,6 +219,7 @@ lib/Net/DRI/Transport/Dummy.pm
 lib/Net/DRI/Transport/HTTP/SOAPLite.pm
 lib/Net/DRI/Transport/HTTP/SOAPWSDL.pm
 lib/Net/DRI/Transport/HTTP/XMLRPCLite.pm
+lib/Net/DRI/Transport/HTTPS.pm
 lib/Net/DRI/Transport/SMTP.pm
 lib/Net/DRI/Transport/SOAP.pm
 lib/Net/DRI/Transport/Socket.pm
@@ -258,5 +279,9 @@ t/624bookmyname_ws_live.t
 t/625gandi_ws_live.t
 t/626nominet_epp.t
 t/627at_epp.t
+t/628de_rri.t
+t/629biz_epp.t
+t/630rfc3915_epp.t
+t/999epp_bugs.t
 TODO
 META.yml                                 Module meta-data (added by MakeMaker)

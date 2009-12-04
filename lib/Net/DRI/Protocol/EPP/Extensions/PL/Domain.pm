@@ -112,7 +112,7 @@ sub create
  }
 
  ## Period, OPTIONAL
- if (Net::DRI::Protocol::EPP::Core::Domain::verify_rd($rd,'duration'))
+ if (Net::DRI::Util::has_duration($rd))
  {
   my $period=$rd->{duration};
   Net::DRI::Util::check_isa($period,'DateTime::Duration');
@@ -120,10 +120,10 @@ sub create
  }
 
  ## Nameservers, OPTIONAL
- push @d,build_ns($epp,$rd->{ns},$domain) if (Net::DRI::Protocol::EPP::Core::Domain::verify_rd($rd,'ns') && UNIVERSAL::isa($rd->{ns},'Net::DRI::Data::Hosts') && !$rd->{ns}->is_empty());
+ push @d,build_ns($epp,$rd->{ns},$domain) if (Net::DRI::Util::has_ns($rd) && !$rd->{ns}->is_empty());
 
  ## Contacts, all OPTIONAL
- if (Net::DRI::Protocol::EPP::Core::Domain::verify_rd($rd,'contact') && UNIVERSAL::isa($rd->{contact},'Net::DRI::Data::ContactSet'))
+ if (Net::DRI::Util::has_contact($rd))
  {
   my $cs=$rd->{contact};
   my @o=$cs->get('registrant');
@@ -132,8 +132,8 @@ sub create
  }
 
  ## AuthInfo
- Net::DRI::Exception::usererr_insufficient_parameters("authInfo is mandatory") unless (Net::DRI::Protocol::EPP::Core::Domain::verify_rd($rd,'auth') && (ref($rd->{auth}) eq 'HASH'));
- push @d,Net::DRI::Protocol::EPP::Core::Domain::build_authinfo($rd->{auth});
+ Net::DRI::Exception::usererr_insufficient_parameters("authInfo is mandatory") unless (Net::DRI::Util::has_auth($rd));
+ push @d,Net::DRI::Protocol::EPP::Core::Domain::build_authinfo($epp,$rd->{auth});
  $mes->command_body(\@d);
 
  return unless exists($rd->{reason}) || exists($rd->{book});

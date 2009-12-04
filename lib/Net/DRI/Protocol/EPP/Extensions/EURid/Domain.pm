@@ -382,7 +382,7 @@ sub trade_request
 {
  my ($epp,$domain,$rd)=@_;
  my $mes=$epp->message();
- my @d=Net::DRI::Protocol::EPP::Core::Domain::build_command($mes,['trade',{op=>'req'}],$domain);
+ my @d=Net::DRI::Protocol::EPP::Core::Domain::build_command($mes,['trade',{op=>'request'}],$domain);
  $mes->command_body(\@d);
 
  my @n=add_transfer($epp,$mes,$domain,$rd);

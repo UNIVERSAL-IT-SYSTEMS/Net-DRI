@@ -130,7 +130,7 @@ sub get_data
   $length-=$sock->read($new,$length);
   $m.=$new;
  }
- die(Net::DRI::Protocol::ResultStatus->new_error('COMMAND_SYNTAX_ERROR',$m? $m : '<empty message from server>','en')) unless ($m=~m!</epp>$!);
+ die(Net::DRI::Protocol::ResultStatus->new_error('COMMAND_SYNTAX_ERROR',$m? $m : '<empty message from server>','en')) unless ($m=~m!</epp>\r?$!);
 
  return Net::DRI::Data::Raw->new_from_string($m);
 }

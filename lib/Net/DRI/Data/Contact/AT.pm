@@ -92,7 +92,7 @@ sub validate
   Net::DRI::Exception::usererr_insufficient_parameters('Invalid contact information: type mandatory') unless ($self->type());
  }
 
- push @errs,'srid' if ($self->srid() && $self->srid()!~m/^\w{1,80}-\w{1,8}$/); ## \w includes _ in Perl
+ push @errs,'srid' if ($self->srid() && $self->srid()!~m/^\w{1,80}-\w{1,8}$/ && $self->srid() ne 'auto'); ## \w includes _ in Perl
  push @errs,'name' if ($self->name() && grep { !Net::DRI::Util::xml_is_normalizedstring($_,1,255) }     ($self->name()));
  push @errs,'org'  if ($self->org()  && grep { !Net::DRI::Util::xml_is_normalizedstring($_,undef,255) } ($self->org()));
 

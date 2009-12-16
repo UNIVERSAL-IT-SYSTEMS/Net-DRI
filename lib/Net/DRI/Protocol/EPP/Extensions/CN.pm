@@ -68,27 +68,14 @@ See the LICENSE file that comes with this distribution for more details.
 =cut
 
 ####################################################################################################
-sub new
+
+sub setup
 {
- my $h=shift;
- my $c=ref($h) || $h;
-
- my ($drd,$version,$extrah)=@_;
- my %e=map { $_ => 1 } (defined($extrah)? (ref($extrah)? @$extrah : ($extrah)) : ());
-
- $e{'Net::DRI::Protocol::EPP::Extensions::CN::Domain'}=1;
- $e{'Net::DRI::Protocol::EPP::Extensions::CN::Contact'}=1;
- $e{'Net::DRI::Protocol::EPP::Extensions::CN::Host'}=1;
- $e{'Net::DRI::Protocol::EPP::Extensions::CN::Message'}=1;
-
- my $self=$c->SUPER::new($drd,$version,[keys(%e)]); ## we are now officially a Net::DRI::Protocol::EPP object
-
- my $rfact=$self->factories();
- $rfact->{contact}=sub { return Net::DRI::Data::Contact::CN->new(@_); };
-
- bless($self,$c); ## rebless
- return $self;
+ my ($self, $rp) = @_;
+ $self->factories('contact', sub { return Net::DRI::Data::Contact::CN->new(@_); });
 }
+
+sub default_extensions { return qw/CN::Domain CN::Contact CN::Host CN::Message/; }
 
 ####################################################################################################
 1;

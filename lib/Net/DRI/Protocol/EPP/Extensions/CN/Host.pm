@@ -108,7 +108,7 @@ sub check_parse
  my $mes=$po->message();
  return unless $mes->is_success();
 
- my $chkdata=$mes->get_content('chkData',$mes->ns('host'));
+ my $chkdata=$mes->_get_content('chkData',$mes->ns('host'));
  return unless $chkdata;
  foreach my $cd ($chkdata->getElementsByTagNameNS($mes->ns('host'),'cd'))
  {

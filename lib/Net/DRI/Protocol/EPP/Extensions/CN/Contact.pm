@@ -92,7 +92,7 @@ sub check_parse
  my $mes=$po->message();
  return unless $mes->is_success();
 
- my $chkdata=$mes->get_content('chkData',$mes->ns('contact'));
+ my $chkdata=$mes->_get_content('chkData',$mes->ns('contact'));
  return unless $chkdata;
  foreach my $cd ($chkdata->getElementsByTagNameNS($mes->ns('contact'),'cd'))
  {
@@ -118,7 +118,7 @@ sub info_parse
  my $mes=$po->message();
  return unless $mes->is_success();
 
- my $infdata=$mes->get_content('infData',$mes->ns('contact'));
+ my $infdata=$mes->_get_content('infData',$mes->ns('contact'));
  return unless $infdata;
 
  my %cd=map { $_ => [] } qw/name org street city sp pc cc/;
@@ -431,7 +431,7 @@ sub create_parse
  my $mes=$po->message();
  return unless $mes->is_success();
 
- my $credata=$mes->get_content('creData',$mes->ns('contact'));
+ my $credata=$mes->_get_content('creData',$mes->ns('contact'));
  return unless $credata;
 
  my $c=$credata->getFirstChild();
@@ -495,7 +495,7 @@ sub pandata_parse
  my $mes=$po->message();
  return unless $mes->is_success();
 
- my $pandata=$mes->get_content('panData',$mes->ns('contact'));
+ my $pandata=$mes->_get_content('panData',$mes->ns('contact'));
  return unless $pandata;
 
  my $c=$pandata->firstChild();

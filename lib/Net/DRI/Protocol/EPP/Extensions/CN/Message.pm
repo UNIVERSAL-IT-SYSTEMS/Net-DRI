@@ -146,7 +146,7 @@ sub parse_poll
  $msgid=$mes->msg_id();
  $rinfo->{message}->{session}->{last_id}=$msgid;
 
- my $mesdata=$mes->get_content('message',$NS,0);
+ my $mesdata=$mes->_get_content('message',$NS,0);
  $rinfo->{domain}->{$oname}->{message}=$mesdata;
  return unless $mesdata;
 }

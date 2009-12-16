@@ -146,7 +146,7 @@ sub check_parse
  my $mes=$po->message();
  return unless $mes->is_success();
 
- my $chkdata=$mes->get_content('chkData',$mes->ns('domain'));
+ my $chkdata=$mes->_get_content('chkData',$mes->ns('domain'));
  return unless $chkdata;
  foreach my $cd ($chkdata->getElementsByTagNameNS($mes->ns('domain'),'cd'))
  {
@@ -186,7 +186,7 @@ sub info_parse
  my ($po,$otype,$oaction,$oname,$rinfo)=@_;
  my $mes=$po->message();
  return unless $mes->is_success();
- my $infdata=$mes->get_content('infData',$mes->ns('domain'));
+ my $infdata=$mes->_get_content('infData',$mes->ns('domain'));
  return unless $infdata;
  my (@s,@host,$ns);
  my $cs=Net::DRI::Data::ContactSet->new();
@@ -345,9 +345,9 @@ sub renew_parse
  my $mes=$po->message();
  return unless $mes->is_success();
 
- my $rendata=$mes->get_content('renData',$mes->ns('domain'));
+ my $rendata=$mes->_get_content('renData',$mes->ns('domain'));
  if (!$rendata) {
-       $rendata=$mes->get_content('creData',$mes->ns('domain'));
+       $rendata=$mes->_get_content('creData',$mes->ns('domain'));
  }
  return unless $rendata;
 

@@ -90,7 +90,7 @@ sub transport_protocol_default
  my ($self,$type)=@_;
 
  return ('Net::DRI::Transport::Socket',{},'Net::DRI::Protocol::EPP::Extensions::ASIA',{})          if $type eq 'epp';
- return ('Net::DRI::Transport::Socket',{remote_host=>'whois.aero'},'Net::DRI::Protocol::Whois',{}) if $type eq 'whois';
+ return ('Net::DRI::Transport::Socket',{remote_host=>'whois.nic.asia'},'Net::DRI::Protocol::Whois',{}) if $type eq 'whois';
  return;
 }
 

@@ -85,26 +85,15 @@ sub periods  { return map { DateTime::Duration->new(years => $_) } (1..10); }
 sub name     { return 'CN'; }
 sub tlds     { return ('cn'); }
 sub object_types { return ('domain','contact','ns'); }
-
-sub transport_protocol_compatible
-{
- my ($self,$to,$po)=@_;
- my $pn=$po->name();
- my $pv=$po->version();
- my $tn=$to->name();
-
- return 1 if (($pn eq 'EPP') && ($tn eq 'socket_inet'));
- return 1 if (($pn eq 'Whois') && ($tn eq 'socket_inet'));
- return;
-}
+sub profile_types { return qw/epp whois/; }
 
 sub transport_protocol_default
 {
- my ($drd,$ndr,$type)=@_;
- $type='' if (!defined($type) || ref($type));
- return ('Net::DRI::Transport::Socket','Net::DRI::Protocol::EPP') unless ($type);
- return ('Net::DRI::Transport::Socket',[{defer=>1,close_after=>1,socktype=>'tcp',remote_host=>'whois.cnnic.net.cn',remote_port=>43,protocol_connection=>'Net::DRI::Protocol::Whois::Connection',protocol_version=>1}],'Net::DRI::Protocol::Whois',[]) if (lc($type) eq 'whois');
+ my ($self,$type)=@_;
 
+ return ('Net::DRI::Transport::Socket',{protocol_version => 0.4},'Net::DRI::Protocol::EPP::Extensions::CN',{}) if ($type eq 'epp');
+ return ('Net::DRI::Transport::Socket',{defer=>1,close_after=>1,socktype=>'tcp',remote_host=>'whois.cnnic.net.cn',remote_port=>43,protocol_connection=>'Net::DRI::Protocol::Whois::Connection',protocol_version=>1},'Net::DRI::Protocol::Whois',[]) if ($type eq 'whois');
+ return;
 }
 
 ####################################################################################################

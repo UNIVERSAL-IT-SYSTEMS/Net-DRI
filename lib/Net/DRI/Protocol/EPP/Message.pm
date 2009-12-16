@@ -283,9 +283,9 @@ sub parse
 
  Net::DRI::Exception->die(0,'protocol/EPP',1,'Unsuccessfull parse, root element is not epp') unless ($root->getName() eq 'epp');
 
- my $g;
- if ($g=($root->getChildrenByTagNameNS($NS,'greeting') ||
-	$root->getElementsByTagName('greeting')))
+ my $g = $root->getChildrenByTagNameNS($NS,'greeting');
+ $g = $root->getChildrenByTagName('greeting') unless ($g);
+ if ($g)
  {
   push @{$self->{results}},{ code => 1000, message => undef, lang => undef, extra_info => []}; ## fake an OK
   $self->result_greeting($self->parse_greeting($g->get_node(1)));
@@ -293,7 +293,7 @@ sub parse
  }
  my $c=$root->getChildrenByTagNameNS($NS,'response');
  $c=$root->getChildrenByTagName('response') unless (defined($c));
- Net::DRI::Exception->die(0,'protocol/EPP',1,'Unsuccessfull parse, no response block') unless ($c->size()==1);
+ Net::DRI::Exception->die(0,'protocol/EPP',1,'Unsuccessfull parse, no response block') unless ($c && $c->size()==1);
  my $res=$c->get_node(1);
 
  ## result block(s)

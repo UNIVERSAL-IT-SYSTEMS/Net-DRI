@@ -75,7 +75,7 @@ sub login
  my $got=$cm->();
  $got->parse($dr);
  my $rg=$got->result_greeting();
- my $version=$got->version();
+ my $version = $dr->{transport}->{protocol_version};
 
  my $mes=$cm->();
  $mes->command([$version gt 0.4 ? 'login' : 'creds']);
@@ -162,10 +162,11 @@ sub read_data
 sub write_message
 {
  my ($self,$to,$msg)=@_;
+ my $version = $to->{transport}->{protocol_version};
 
  my $m=Net::DRI::Util::encode_utf8($msg);
  my $l=pack('N',4+length($m)); ## RFC 4934 §4
- return $l.$m; ## We do not support EPP "0.4" at all (which lacks length before data)
+ return ($version gt 0.4 ? $l : '') . $m;
 }
 
 sub parse_greeting

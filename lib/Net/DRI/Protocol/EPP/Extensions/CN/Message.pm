@@ -94,7 +94,7 @@ sub parse_poll
   $rd=$rinfo->{message}->{$msgid}; ## already partially filled by Message::parse()
  }
 
- if ($mes->errcode() == 1301 && (defined($mes->node_resdata()) || defined($mes->node_extension()) || defined($mes->node_msg()))) ## there was really a message with some content
+ if ($mes->result_code() == 1301 && (defined($mes->node_resdata()) || defined($mes->node_extension()) || defined($mes->node_msg()))) ## there was really a message with some content
  {
   my ($totype,$toaction,$toname); ## $toaction will remain undef, but could be $haction if only one
   my %info;

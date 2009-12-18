@@ -279,6 +279,7 @@ sub parse
  $xstr =~ s/^\s*//;
  my $doc=$parser->parse_string($xstr);
  my $root=$doc->getDocumentElement();
+ my $version = $self->{version};
  my $msg;
 
  Net::DRI::Exception->die(0,'protocol/EPP',1,'Unsuccessfull parse, root element is not epp') unless ($root->getName() eq 'epp');
@@ -324,7 +325,8 @@ sub parse
    $d{qdate}=DateTime::Format::ISO8601->new()->parse_datetime(Net::DRI::Util::xml_child_content($msgq,$NS,'qDate'));
    my $msgc=$msgq->getChildrenByTagNameNS($NS,'msg')->get_node(1);
    $msgc=$msgq->getChildrenByTagName('msg')->get_node(1) unless ($msgc);
-   $d{lang}=$msgc->getAttribute('lang') || 'en';
+   $d{lang}=($msgc ? $msgc->getAttribute('lang') || 'en' : 'en');
+   $msgc = $msgq if ($version le '0.4' && !$msgc);	# EPP 0.4
 
    if (grep { $_->nodeType() == 1 && $_->nodeName() ne 'qDate' }
 	$msgc->childNodes())

@@ -70,12 +70,12 @@ See the LICENSE file that comes with this distribution for more details.
 
 sub login
 {
- my ($class,$cm,$id,$pass,$cltrid,$dr,$newpass,$pdata)=@_;
+ my ($class,$cm,$id,$pass,$cltrid,$dr,$newpass,$pdata,$pversion)=@_;
 
  my $got=$cm->();
  $got->parse($dr);
  my $rg=$got->result_greeting();
- my $version = $dr->{transport}->{protocol_version};
+ my $version = Net::DRI::Util::check_equal($pversion, ['1.0','0.4'],'1.0');
 
  my $mes=$cm->();
  $mes->command([$version gt 0.4 ? 'login' : 'creds']);

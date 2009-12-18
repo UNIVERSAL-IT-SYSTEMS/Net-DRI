@@ -273,7 +273,7 @@ sub send_login
  }
 
  $cltrid=$self->generate_trid();
- my $login=$pc->login($t->{message_factory},$t->{client_login},$t->{client_password},$cltrid,$dr,$t->{client_newpassword},$t->{protocol_data});
+ my $login=$pc->login($t->{message_factory},$t->{client_login},$t->{client_password},$cltrid,$dr,$t->{client_newpassword},$t->{protocol_data}, $t->{protocol_version});
  $self->log_output('notice','transport',{ctx=>$ctx,trid=>$cltrid,phase=>'opening',direction=>'out',driver=>$self->name().'/'.$self->version(),message=>$login});
  Net::DRI::Exception->die(0,'transport/socket',4,'Unable to send login message to '.$t->{remote_uri}) unless ($sock->print($pc->write_message($self,$login)));
 

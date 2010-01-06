@@ -1,3 +1,24 @@
+0.95tl1 2010-01-06
+
+* XML-LibXML doesn't return anything useful for getChildrenByTagName('*').
+* If we allow 'auto' for registry-side creation of contact srids, the
+  token 'auto' should also pass the vaildation, otherwise the registry is
+  not usable.
+* Version bump at the FRED registry; need to update here as well.
+* Forgive drivers that don't exist
+* Add support for NeuLevel EPP 0.4 interface to .CN/.TW
+* Adapt .cz test so it can be used again after the XSD changes.
+* Correct the host name of the .asia whois server, which was apparently
+  falsely pasted from the .aero definitions.
+* Make connecting to EPP 0.4 registries work.
+* Fix EPP 0.4 contact update and international contact data
+* Sanitize CN test output and add a specific poll test
+* Use Net-DRI 0.95 syntax for .CN test suite.
+* Adapt .CN extensions to the regular Net-DRI 0.95 extension API.
+* get_content is called _get_content in Net-DRI 0.95.
+* New Message API: errcode was replaced by result_code.
+* More EPP 0.4 fixes: pass the EPP version to the login function.
+
 0.95 2009-08-15
 
 If you are upgrading your Net::DRI installation, from version 0.92 or older

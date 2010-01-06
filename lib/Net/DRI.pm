@@ -31,7 +31,7 @@ use base qw(Class::Accessor::Chained::Fast Net::DRI::BaseClass);
 __PACKAGE__->mk_ro_accessors(qw/trid_factory logging cache/);
 
 our $AUTOLOAD;
-our $VERSION='0.95';
+our $VERSION='0.9501';
 our $CVS_REVISION=do { my @r=(q$Revision: 1.35 $=~/\d+/g); sprintf("%d".".%02d" x $#r, @r); };
 our $RUNNING_POE=(exists($INC{'POE.pm'}))? $POE::Kernel::poe_kernel : undef;
 
@@ -43,7 +43,7 @@ Net::DRI - Interface to Domain Name Registries/Registrars/Resellers
 
 =head1 VERSION
 
-This documentation refers to Net::DRI version 0.95
+This documentation refers to Net::DRI version 0.95tl1
 
 =head1 SYNOPSIS
 

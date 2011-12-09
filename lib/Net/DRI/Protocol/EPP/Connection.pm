@@ -131,10 +131,19 @@ sub read_data
 
  if ($version gt 0.4)
  {
-  my $c;
-  my $rl=$sock->sysread($c,4); ## first 4 bytes are the packed length
-  die(Net::DRI::Protocol::ResultStatus->new_error('COMMAND_FAILED_CLOSING','Unable to read EPP 4 bytes length (connection closed by registry '.$to->transport_data('remote_uri').' ?): '.($! || 'no error given'),'en')) unless (defined $rl && $rl==4);
-  my $length=unpack('N',$c)-4;
+  my $c="";
+  my $rl;
+  my $length=4;
+
+  while ($length > 0)
+  {
+   my $mc;
+   $rl=$sock->sysread($mc,$length); ## first 4 bytes are the packed length
+   die(Net::DRI::Protocol::ResultStatus->new_error('COMMAND_FAILED_CLOSING','Unable to read EPP 4 bytes length (connection closed by registry '.$to->transport_data('remote_uri').' ?): '.($! || 'no error given'),'en')) if $!;
+   $c.=$mc;
+   $length-=$rl;
+  }
+  $length=unpack('N',$c)-4;
   while ($length > 0)
   {
    my $new;

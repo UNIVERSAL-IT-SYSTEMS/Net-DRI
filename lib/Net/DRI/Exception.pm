@@ -113,10 +113,10 @@ sub backtrace
  my ($f,$l);
  if (@bt1)
  {
-  ($f,$l)=(pop(@bt1)=~m/ called at (\S+) line (\d+)\s*$/);
+  ($f,$l)=(pop(@bt1)=~m/ called at (\S+) line (\d+)/);
  } else
  {
-  ($f,$l)=(shift(@bt2)=~m/ at (\S+) line (\d+)\s*$/);
+  ($f,$l)=(shift(@bt2)=~m/ at (\S+) line (\d+)/);
  }
  my @b;
  push @b,sprintf('EXCEPTION %d@%s from line %d of file %s:',$self->code(),$self->area(),$l,$f);

@@ -1,10 +1,10 @@
 #!/usr/bin/perl -w
 
-use Test::More tests => 340;
+use Test::More tests => 339;
 
 use Net::DRI::Util;
 
-is(defined(%Net::DRI::Util::CCA2),1,'%CCA2 defined');
+# is(defined(%Net::DRI::Util::CCA2),1,'%CCA2 defined');
 isa_ok(\%Net::DRI::Util::CCA2,'HASH','%CCA2 hash');
 is(keys(%Net::DRI::Util::CCA2),243,'%CCA2 number of elements');
 is_deeply([grep { ! /^[A-Z]{2}$/ } keys(%Net::DRI::Util::CCA2)],[],'%CCA2 keys');
